@@ -14,7 +14,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.privacyguard.R
 import com.privacyguard.ui.theme.PrivacyGuardTheme
-import dagger.hilt.android.AndroidEntryPoint
+// import dagger.hilt.android.AndroidEntryPoint // TODO: Réactiver au Jour 2
 
 /**
  * Activité principale de Privacy Guard
@@ -22,7 +22,7 @@ import dagger.hilt.android.AndroidEntryPoint
  * Point d'entrée de l'application. Pour le MVP, affiche un écran simple
  * avec les informations de base et les boutons d'accès aux fonctionnalités.
  */
-@AndroidEntryPoint
+// @AndroidEntryPoint // TODO: Réactiver au Jour 2 quand on implémente DI
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

@@ -1,8 +1,9 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    id("kotlin-kapt")
-    id("com.google.dagger.hilt.android")
+    // TODO: Réactiver KAPT et Hilt au Jour 2 quand on implémente les capteurs
+    // id("kotlin-kapt")
+    // id("com.google.dagger.hilt.android")
     id("kotlin-parcelize")
 }
 
@@ -63,7 +64,9 @@ android {
     }
 }
 
-// Configuration KAPT pour compatibilité Java 17+
+// Configuration KAPT pour compatibilité Java 17+ (désactivée temporairement)
+// TODO: Réactiver au Jour 2
+/*
 kapt {
     javacOptions {
         option("--add-opens", "jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED")
@@ -78,6 +81,7 @@ kapt {
         option("--add-opens", "jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED")
     }
 }
+*/
 
 dependencies {
     // Kotlin
@@ -110,15 +114,17 @@ dependencies {
     // ML Kit Face Detection
     implementation(libs.google.mlkit.face.detection)
     
-    // Room Database
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    kapt(libs.androidx.room.compiler)
+    // Room Database (désactivé temporairement - pas besoin pour MVP Jour 1)
+    // TODO: Réactiver au Jour 2
+    // implementation(libs.androidx.room.runtime)
+    // implementation(libs.androidx.room.ktx)
+    // kapt(libs.androidx.room.compiler)
     
-    // Hilt Dependency Injection
-    implementation(libs.hilt.android)
-    kapt(libs.hilt.compiler)
-    implementation(libs.androidx.hilt.navigation.compose)
+    // Hilt Dependency Injection (désactivé temporairement - pas besoin pour MVP Jour 1)
+    // TODO: Réactiver au Jour 2
+    // implementation(libs.hilt.android)
+    // kapt(libs.hilt.compiler)
+    // implementation(libs.androidx.hilt.navigation.compose)
     
     // WorkManager
     implementation(libs.androidx.work.runtime.ktx)

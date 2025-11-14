@@ -123,7 +123,7 @@ class MotionSensor(context: Context) : BaseSensor<MotionData>(context, "MotionSe
     private fun evaluateThreatLevel(
         magnitude: Float,
         previousMagnitude: Float,
-        deltaTime: Long
+        @Suppress("UNUSED_PARAMETER") deltaTime: Long
     ): Pair<ThreatLevel, Float> {
         // Calculer le changement d'accélération
         val accelerationChange = Math.abs(magnitude - previousMagnitude)

@@ -39,7 +39,7 @@ fun PermissionsScreen(
     // Launcher pour demander les permissions
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
+    ) { _ ->
         // Mise à jour de l'état après la demande
         permissionsState = PermissionManager.getMissingPermissions(context)
         

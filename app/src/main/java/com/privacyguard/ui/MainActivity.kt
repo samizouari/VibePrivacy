@@ -166,7 +166,13 @@ fun MainScreen() {
                 if (isProtectionEnabled) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "⚠️ Capteurs pas encore implémentés (Jour 2)",
+                        text = "✅ Capteurs actifs : Caméra, Audio, Mouvement, Proximité",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "📊 Vérifiez les logs Timber pour voir les détections",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

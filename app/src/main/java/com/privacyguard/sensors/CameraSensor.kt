@@ -125,6 +125,7 @@ class CameraSensor(
             )
             
             Timber.i("CameraSensor: Camera bound successfully")
+            Timber.d("CameraSensor: ImageAnalysis analyzer set, waiting for frames...")
         } catch (e: Exception) {
             Timber.e(e, "CameraSensor: Failed to bind camera use cases")
         }
@@ -147,15 +148,19 @@ class CameraSensor(
         
         val mediaImage = imageProxy.image
         if (mediaImage == null) {
+            Timber.w("CameraSensor: MediaImage is null, skipping frame")
             imageProxy.close()
             return
         }
+        
+        Timber.v("CameraSensor: Processing frame ${imageProxy.width}x${imageProxy.height}, rotation=${imageProxy.imageInfo.rotationDegrees}")
         
         val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
         
         // Détection de visages avec ML Kit
         faceDetector.process(image)
             .addOnSuccessListener { faces ->
+                Timber.d("CameraSensor: ML Kit returned ${faces.size} face(s)")
                 handleFaceDetection(faces, currentTime)
             }
             .addOnFailureListener { e ->

@@ -103,7 +103,8 @@ class ProximitySensor(context: Context) : BaseSensor<ProximityData>(context, "Pr
             )
         )
         
-        Timber.v("ProximitySensor: Distance=${distance}cm, isNear=$isNear, threat=$threatLevel")
+        val sensorType = if ((distance == 0f || distance == maxRange) && maxRange > 0f) "binary" else "continuous"
+        Timber.v("ProximitySensor: Distance=${distance}cm, isNear=$isNear, threat=$threatLevel, type=$sensorType")
     }
     
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
@@ -112,17 +113,29 @@ class ProximitySensor(context: Context) : BaseSensor<ProximityData>(context, "Pr
     
     /**
      * Évalue le niveau de menace selon la distance de proximité
+     * 
+     * Note: Certains capteurs Android sont binaires (0.0 = proche, maxRange = loin)
+     * On adapte la logique en conséquence.
      */
     private fun evaluateThreatLevel(distance: Float): Pair<ThreatLevel, Float> {
+        // Si le capteur est binaire (distance = 0 ou = maxRange)
+        val isBinarySensor = (distance == 0f || distance == maxRange) && maxRange > 0f
+        
         return when {
-            // Objet très proche (< 1cm) = haute menace
-            distance < veryNearThreshold -> ThreatLevel.HIGH to 0.9f
+            // Capteur binaire : 0 = très proche = haute menace
+            isBinarySensor && distance == 0f -> ThreatLevel.HIGH to 0.9f
             
-            // Objet proche (< 3cm) = menace moyenne
-            distance < nearThreshold -> ThreatLevel.MEDIUM to 0.75f
+            // Capteur binaire : maxRange = loin = aucune menace
+            isBinarySensor && distance == maxRange -> ThreatLevel.NONE to 1.0f
             
-            // Objet à portée du capteur mais pas très proche = faible menace
-            distance < maxRange -> ThreatLevel.LOW to 0.5f
+            // Capteur continu : Objet très proche (< 1cm) = haute menace
+            !isBinarySensor && distance < veryNearThreshold -> ThreatLevel.HIGH to 0.9f
+            
+            // Capteur continu : Objet proche (< 3cm) = menace moyenne
+            !isBinarySensor && distance < nearThreshold -> ThreatLevel.MEDIUM to 0.75f
+            
+            // Capteur continu : Objet à portée mais pas très proche = faible menace
+            !isBinarySensor && distance < maxRange -> ThreatLevel.LOW to 0.5f
             
             // Rien de proche = aucune menace
             else -> ThreatLevel.NONE to 1.0f

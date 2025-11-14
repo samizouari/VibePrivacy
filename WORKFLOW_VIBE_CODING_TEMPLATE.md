@@ -278,6 +278,20 @@ git push -u origin sami
 3. **Namespace confusion** : Gemini utilisait `com.n7.vibeprivacy`, on veut `com.privacyguard`
    - Solution : Correction manuelle de tous les fichiers de config
 
+4. **❌ Plugin kotlin-compose introuvable** (Découvert lors du test Android Studio)
+   ```
+   Plugin [id: 'org.jetbrains.kotlin.plugin.compose', version: '1.9.10'] was not found
+   ```
+   - **Cause** : Le plugin `kotlin-compose` n'existe que dans Kotlin 2.0+, pas en 1.9.10
+   - **Solution** : Retirer le plugin, utiliser la config traditionnelle `composeOptions`
+   - **Fichiers modifiés** :
+     - `build.gradle.kts` : retiré `kotlin-compose` plugin
+     - `app/build.gradle.kts` : retiré alias du plugin
+     - `gradle/libs.versions.toml` : retiré la définition du plugin
+   - **Commit** : `fix(build): remove kotlin-compose plugin incompatible with Kotlin 1.9.10`
+   - **Temps de résolution** : 2 minutes
+   - **Apprentissage** : Toujours vérifier la compatibilité des plugins avec la version Kotlin
+
 #### Tests Effectués
 
 - [x] Commit réussi (34 fichiers)

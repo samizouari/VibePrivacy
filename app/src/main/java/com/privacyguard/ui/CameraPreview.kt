@@ -42,6 +42,7 @@ fun CameraPreviewWithFaceDetection(
     var preview by remember { mutableStateOf<Preview?>(null) }
     var imageAnalysis by remember { mutableStateOf<ImageAnalysis?>(null) }
     var detectedFaces by remember { mutableStateOf<List<Face>>(emptyList()) }
+    var previewViewRef by remember { mutableStateOf<PreviewView?>(null) }
     
     val cameraExecutor: ExecutorService = remember { Executors.newSingleThreadExecutor() }
     
@@ -127,25 +128,25 @@ fun CameraPreviewWithFaceDetection(
                 PreviewView(ctx).apply {
                     scaleType = PreviewView.ScaleType.FILL_CENTER
                     implementationMode = PreviewView.ImplementationMode.COMPATIBLE
-                    
-                    // Attendre que le preview soit prêt avant de setter le surface provider
-                    preview?.let { previewUseCase ->
-                        previewUseCase.setSurfaceProvider(surfaceProvider)
-                        Timber.d("CameraPreview: Surface provider set for preview")
-                    } ?: run {
-                        Timber.w("CameraPreview: Preview not ready yet, will set later")
-                    }
+                    previewViewRef = this
+                    Timber.d("CameraPreview: PreviewView created")
                 }
             },
             modifier = Modifier.fillMaxSize(),
             update = { previewView ->
-                // Mettre à jour le surface provider si le preview devient disponible
-                preview?.let { previewUseCase ->
-                    previewUseCase.setSurfaceProvider(previewView.surfaceProvider)
-                    Timber.d("CameraPreview: Surface provider updated in update callback")
-                }
+                previewViewRef = previewView
             }
         )
+        
+        // Connecter le preview use case au PreviewView quand les deux sont prêts
+        LaunchedEffect(preview, previewViewRef) {
+            preview?.let { previewUseCase ->
+                previewViewRef?.let { view ->
+                    previewUseCase.setSurfaceProvider(view.surfaceProvider)
+                    Timber.d("CameraPreview: Surface provider connected")
+                } ?: Timber.w("CameraPreview: PreviewView not ready yet")
+            } ?: Timber.w("CameraPreview: Preview use case not ready yet")
+        }
         
         // Overlay pour dessiner les rectangles des visages
         Canvas(modifier = Modifier.fillMaxSize()) {

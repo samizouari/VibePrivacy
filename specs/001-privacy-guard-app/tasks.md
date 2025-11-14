@@ -23,10 +23,10 @@
 
 **Purpose**: Project initialization and dependency configuration.
 
-- [ ] T001 Configure `build.gradle.kts` with required dependencies: CameraX, TensorFlow Lite, Room, and Android SensorManager in `app/build.gradle.kts`
-- [ ] T002 Create the base package structure as defined in `plan.md` inside `app/src/main/java/com/n7/vibeprivacy/`
-- [ ] T003 [P] Implement basic UI theme and colors in `app/src/main/res/values/`
-- [ ] T004 [P] Set up dependency injection framework (e.g., Hilt) in the `app/src/main/java/com/n7/vibeprivacy/di/` package.
+- [X] T001 Configure `build.gradle.kts` with required dependencies: CameraX, TensorFlow Lite, Room, and Android SensorManager in `app/build.gradle.kts`
+- [X] T002 Create the base package structure as defined in `plan.md` inside `app/src/main/java/com/n7/vibeprivacy/`
+- [X] T003 [P] Implement basic UI theme and colors in `app/src/main/res/values/`
+- [X] T004 [P] Set up dependency injection framework (e.g., Hilt) in the `app/src/main/java/com/n7/vibeprivacy/di/` package.
 
 ---
 
@@ -36,11 +36,11 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T005 Define Room database entities (`ThreatEvent`, `ProtectionProfile`, `WhitelistedFace`) in `app/src/main/java/com/n7/vibeprivacy/data/models/`.
-- [ ] T006 Create Room database DAOs for each entity in `app/src/main/java/com/n7/vibeprivacy/data/source/`.
-- [ ] T007 Implement the Room database and repository classes in `app/src/main/java/com/n7/vibeprivacy/data/`.
-- [ ] T008 Create a foreground service for background monitoring in `app/src/main/java/com/n7/vibeprivacy/services/MonitoringService.kt`.
-- [ ] T009 Implement permission handling for Camera, Microphone, and other required permissions.
+- [X] T005 Define Room database entities (`ThreatEvent`, `ProtectionProfile`, `WhitelistedFace`) in `app/src/main/java/com/n7/vibeprivacy/data/models/`.
+- [X] T006 Create Room database DAOs for each entity in `app/src/main/java/com/n7/vibeprivacy/data/source/`.
+- [X] T007 Implement the Room database and repository classes in `app/src/main/java/com/n7/vibeprivacy/data/`.
+- [X] T008 Create a foreground service for background monitoring in `app/src/main/java/com/n7/vibeprivacy/services/MonitoringService.kt`.
+- [X] T009 Implement permission handling for Camera, Microphone, and other required permissions.
 
 **Checkpoint**: Foundation ready - user story implementation can now begin.
 
@@ -54,13 +54,13 @@
 
 ### Implementation for User Story 1
 
-- [ ] T010 [US1] Implement CameraX manager in `app/src/main/java/com/n7/vibeprivacy/core/camerax/` to capture and analyze frames from the front camera.
-- [ ] T011 [US1] Integrate a face detection model with TensorFlow Lite to identify the number of faces in `app/src/main/java/com/n7/vibeprivacy/core/ml/FaceDetector.kt`.
-- [ ] T012 [US1] Implement a basic keyword detection mechanism using the microphone in `app/src/main/java/com/n7/vibeprivacy/core/audio/KeywordDetector.kt`.
-- [ ] T013 [US1] Create a screen overlay/masking component that can be drawn over other apps in `app/src/main/java/com/n7/vibeprivacy/ui/overlay/ScreenMask.kt`.
-- [ ] T014 [US1] In `MonitoringService`, integrate face and keyword detection, triggering the screen mask when a threat is detected.
-- [ ] T015 [US1] When a threat is detected, create and save a `ThreatEvent` to the Room database.
-- [ ] T016 [US1] Create a basic main screen UI to show the service status (active/inactive) in `app/src/main/java/com/n7/vibeprivacy/features/main/MainScreen.kt`.
+- [X] T010 [US1] Implement CameraX manager in `app/src/main/java/com/n7/vibeprivacy/core/camerax/` to capture and analyze frames from the front camera.
+- [X] T011 [US1] Integrate a face detection model with TensorFlow Lite to identify the number of faces in `app/src/main/java/com/n7/vibeprivacy/core/ml/FaceDetector.kt`.
+- [X] T012 [US1] Implement a basic keyword detection mechanism using the microphone in `app/src/main/java/com/n7/vibeprivacy/core/audio/KeywordDetector.kt`.
+- [X] T013 [US1] Create a screen overlay/masking component that can be drawn over other apps in `app/src/main/java/com/n7/vibeprivacy/ui/overlay/ScreenMask.kt`.
+- [X] T014 [US1] In `MonitoringService`, integrate face and keyword detection, triggering the screen mask when a threat is detected.
+- [X] T015 [US1] When a threat is detected, create and save a `ThreatEvent` to the Room database.
+- [X] T016 [US1] Create a basic main screen UI to show the service status (active/inactive) in `app/src/main/java/com/n7/vibeprivacy/features/main/MainScreen.kt`.
 
 **Checkpoint**: At this point, User Story 1 should be functional and testable independently.
 

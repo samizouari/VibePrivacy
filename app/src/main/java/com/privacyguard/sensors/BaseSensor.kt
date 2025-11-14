@@ -77,7 +77,7 @@ abstract class BaseSensor<T : SensorData>(
      * Extension pour filter les valeurs null
      */
     private fun <T> StateFlow<T?>.filterNotNull(): Flow<T> = 
-        kotlinx.coroutines.flow.mapNotNull { it }
+        this.mapNotNull { it }
     
     override suspend fun start() {
         if (_isActive.value) {

@@ -187,20 +187,36 @@ fun processImage(image: Bitmap): FaceDetectionResult {
 ## 📅 État Actuel du Projet
 
 ### Jour en Cours
-**JOUR 1 - Matin** ✅ COMPLÈTEMENT TERMINÉ
+**JOUR 1 - COMPLET** ✅✅ TERMINÉ AVEC SUCCÈS !
 
-**🎉 MILESTONE ATTEINTE : APPLICATION FONCTIONNELLE !**
-- ✅ Compilation réussie
-- ✅ Déploiement sur device physique
-- ✅ UI interactive avec toggle protection
-- ✅ 13 commits sur branche `sami`
+**🎉 MILESTONES ATTEINTES :**
+- ✅ Application fonctionnelle (Matin)
+- ✅ Système de permissions complet (Après-midi)
+- ✅ Foreground Service implémenté (Après-midi)
+- ✅ 16 commits sur branche `sami`
+
+### Accomplissements Jour 1
+
+**Matin** :
+- Configuration projet Android (SDK, dependencies)
+- UI Compose avec thème sobre
+- Bouton toggle protection interactif
+
+**Après-midi** :
+- PermissionManager centralisé
+- PermissionsScreen avec UI élégante
+- PrivacyGuardService (foreground service)
+- Notification persistante
+- Intégration complète MainActivity
 
 ### Prochaine Tâche
-**Jour 1 - Après-midi** : 
-1. Système de permissions runtime (Caméra, Micro, Localisation)
-2. Skeleton du Foreground Service
+**JOUR 2 - Capteurs** : 
+1. Camera sensor avec ML Kit (face detection)
+2. Audio sensor (niveau sonore)
+3. Motion sensor (accéléromètre)
+4. Proximity sensor
    
-**Note** : Hilt/Room désactivés temporairement (problème KAPT/Java 17). Réactivation prévue au Jour 2.
+**Note** : Hilt/Room réactivation prévue au Jour 2 pour DI et persistence.
 
 ### Fichiers Documentation Créés
 - [x] README.md

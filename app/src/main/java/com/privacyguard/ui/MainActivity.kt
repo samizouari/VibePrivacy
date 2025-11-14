@@ -7,6 +7,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -43,6 +47,8 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainScreen() {
+    var isProtectionEnabled by remember { mutableStateOf(false) }
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -52,7 +58,7 @@ fun MainScreen() {
     ) {
         // Logo ou icône (à ajouter plus tard)
         Text(
-            text = "🛡️",
+            text = if (isProtectionEnabled) "🛡️✅" else "🛡️",
             style = MaterialTheme.typography.displayLarge
         )
         
@@ -75,10 +81,22 @@ fun MainScreen() {
         
         // Bouton principal
         Button(
-            onClick = { /* TODO: Navigation vers dashboard */ },
-            modifier = Modifier.fillMaxWidth()
+            onClick = { 
+                isProtectionEnabled = !isProtectionEnabled
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = if (isProtectionEnabled) {
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary
+                )
+            } else {
+                ButtonDefaults.buttonColors()
+            }
         ) {
-            Text(stringResource(R.string.start_protection))
+            Text(
+                if (isProtectionEnabled) "✓ Protection active" 
+                else stringResource(R.string.start_protection)
+            )
         }
         
         Spacer(modifier = Modifier.height(16.dp))
@@ -96,14 +114,22 @@ fun MainScreen() {
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                containerColor = if (isProtectionEnabled) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant
+                }
             )
         ) {
             Column(
                 modifier = Modifier.padding(16.dp)
             ) {
                 Text(
-                    text = "Statut : Configuration en cours",
+                    text = if (isProtectionEnabled) {
+                        "Statut : 🟢 Protection activée"
+                    } else {
+                        "Statut : ⚪ Protection désactivée"
+                    },
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -111,6 +137,14 @@ fun MainScreen() {
                     text = "Mode : Discret (MVP)",
                     style = MaterialTheme.typography.bodySmall
                 )
+                if (isProtectionEnabled) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "⚠️ Capteurs pas encore implémentés (Jour 2)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }

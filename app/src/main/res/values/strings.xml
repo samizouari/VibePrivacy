@@ -1,3 +1,7 @@
 <resources>
-    <string name="app_name">VibePrivacy</string>
+    <string name="app_name">Privacy Guard</string>
+    <string name="app_tagline">Protection de confidentialité en temps réel</string>
+    <string name="start_protection">Démarrer la protection</string>
+    <string name="settings">Paramètres</string>
+    <string name="dashboard">Tableau de bord</string>
 </resources>

@@ -121,10 +121,8 @@ class PrivacyGuardService : LifecycleService() {
         return START_STICKY
     }
     
-    override fun onBind(intent: Intent?): IBinder? {
-        // Service non lié (pas de binding)
-        return null
-    }
+    // Service non lié (pas de binding)
+    // onBind n'est pas nécessaire pour un service non lié
     
     override fun onDestroy() {
         super.onDestroy()

@@ -16,7 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
+import androidx.compose.ui.zIndex
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.Face
 import com.google.mlkit.vision.face.FaceDetection
@@ -129,14 +129,25 @@ fun CameraPreviewWithFaceDetection(
                     scaleType = PreviewView.ScaleType.FILL_CENTER
                     implementationMode = PreviewView.ImplementationMode.COMPATIBLE
                     previewViewRef = this
-                    Timber.d("CameraPreview: PreviewView created")
+                    Timber.d("CameraPreview: PreviewView created, size will be set by parent")
                 }
             },
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(0f), // PreviewView en dessous de l'overlay
             update = { previewView ->
                 previewViewRef = previewView
             }
         )
+        
+        // Debug: Fond coloré pour voir si le PreviewView est bien là
+        // (à retirer une fois que ça fonctionne)
+        // Box(
+        //     modifier = Modifier
+        //         .fillMaxSize()
+        //         .zIndex(-1f)
+        //         .background(Color.Red.copy(alpha = 0.3f))
+        // )
         
         // Connecter le preview use case au PreviewView quand les deux sont prêts
         LaunchedEffect(preview, previewViewRef) {
@@ -148,8 +159,12 @@ fun CameraPreviewWithFaceDetection(
             } ?: Timber.w("CameraPreview: Preview use case not ready yet")
         }
         
-        // Overlay pour dessiner les rectangles des visages
-        Canvas(modifier = Modifier.fillMaxSize()) {
+        // Overlay pour dessiner les rectangles des visages (au-dessus du PreviewView)
+        Canvas(
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(1f) // S'assurer que l'overlay est au-dessus
+        ) {
             detectedFaces.forEach { face ->
                 val bounds = face.boundingBox
                 

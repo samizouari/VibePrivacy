@@ -4,11 +4,8 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.os.Build
-import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
@@ -103,6 +100,7 @@ class PrivacyGuardService : LifecycleService() {
     }
     
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId) // Appel du super pour LifecycleService
         Timber.d("PrivacyGuardService onStartCommand() - action: ${intent?.action}")
         
         when (intent?.action) {
@@ -218,19 +216,17 @@ class PrivacyGuardService : LifecycleService() {
      * Crée le canal de notification (requis pour Android O+)
      */
     private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                NOTIFICATION_CHANNEL_ID,
-                NOTIFICATION_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_LOW // Importance basse pour ne pas déranger
-            ).apply {
-                description = "Affiche l'état de la protection Privacy Guard"
-                setShowBadge(false) // Pas de badge sur l'icône
-            }
-            
-            val notificationManager = getSystemService(NotificationManager::class.java)
-            notificationManager.createNotificationChannel(channel)
+        val channel = NotificationChannel(
+            NOTIFICATION_CHANNEL_ID,
+            NOTIFICATION_CHANNEL_NAME,
+            NotificationManager.IMPORTANCE_LOW // Importance basse pour ne pas déranger
+        ).apply {
+            description = "Affiche l'état de la protection Privacy Guard"
+            setShowBadge(false) // Pas de badge sur l'icône
         }
+        
+        val notificationManager = getSystemService(NotificationManager::class.java)
+        notificationManager.createNotificationChannel(channel)
     }
     
     /**

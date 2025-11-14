@@ -89,15 +89,9 @@ class PrivacyGuardService : LifecycleService() {
         // Créer le canal de notification
         createNotificationChannel()
         
-        // Initialiser le gestionnaire de capteurs
-        try {
-            sensorManager = SensorManager(this, this).apply {
-                initialize()
-            }
-            Timber.i("PrivacyGuardService: SensorManager initialized")
-        } catch (e: Exception) {
-            Timber.e(e, "PrivacyGuardService: Failed to initialize SensorManager")
-        }
+        // Ne pas initialiser les capteurs ici, attendre startProtection()
+        // L'initialisation se fera dans startProtection() quand le service est vraiment prêt
+        Timber.d("PrivacyGuardService: onCreate completed, waiting for startProtection()")
     }
     
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -150,9 +144,19 @@ class PrivacyGuardService : LifecycleService() {
         isRunning = true
         isPaused = false
         
-        // Démarrer tous les capteurs
+        // Initialiser et démarrer tous les capteurs
         lifecycleScope.launch {
             try {
+                // Initialiser le SensorManager si pas déjà fait
+                if (sensorManager == null) {
+                    Timber.d("PrivacyGuardService: Initializing SensorManager...")
+                    sensorManager = SensorManager(this@PrivacyGuardService, this@PrivacyGuardService).apply {
+                        initialize()
+                    }
+                    Timber.i("PrivacyGuardService: SensorManager initialized")
+                }
+                
+                // Démarrer tous les capteurs
                 sensorManager?.startAll()
                 Timber.i("All sensors started successfully")
                 
@@ -164,7 +168,9 @@ class PrivacyGuardService : LifecycleService() {
                 //     }
                 // }
             } catch (e: Exception) {
-                Timber.e(e, "Failed to start sensors")
+                Timber.e(e, "Failed to start sensors: ${e.message}")
+                Timber.e(e, "Stack trace:", e)
+                // Ne pas faire crasher l'app, juste logger l'erreur
             }
         }
         

@@ -4,4 +4,7 @@
     <string name="start_protection">Démarrer la protection</string>
     <string name="settings">Paramètres</string>
     <string name="dashboard">Tableau de bord</string>
+    
+    <!-- Accessibility Service -->
+    <string name="accessibility_service_description">Privacy Guard utilise le service d\'accessibilité pour afficher une protection sur toutes les applications et détecter quelle application est active. Privacy Guard ne lit pas le contenu de votre écran et ne capture pas vos frappes clavier. Toutes les données sont traitées localement sur votre appareil.</string>
 </resources>

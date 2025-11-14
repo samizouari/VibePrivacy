@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.privacyguard.R
 import com.privacyguard.ui.theme.PrivacyGuardTheme
+import timber.log.Timber
 // import dagger.hilt.android.AndroidEntryPoint // TODO: Réactiver au Jour 2
 
 /**

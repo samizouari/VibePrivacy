@@ -1,0 +1,222 @@
+package com.privacyguard.ui
+
+import androidx.camera.core.*
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.face.Face
+import com.google.mlkit.vision.face.FaceDetection
+import com.google.mlkit.vision.face.FaceDetector
+import com.google.mlkit.vision.face.FaceDetectorOptions
+import timber.log.Timber
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+
+/**
+ * Composant Compose pour afficher la prévisualisation de la caméra
+ * avec encadrement des visages détectés en vert
+ */
+@Composable
+fun CameraPreviewWithFaceDetection(
+    modifier: Modifier = Modifier,
+    onFacesDetected: (List<Face>) -> Unit = {}
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val scope = rememberCoroutineScope()
+    
+    var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
+    var preview by remember { mutableStateOf<Preview?>(null) }
+    var imageAnalysis by remember { mutableStateOf<ImageAnalysis?>(null) }
+    var detectedFaces by remember { mutableStateOf<List<Face>>(emptyList()) }
+    
+    val cameraExecutor: ExecutorService = remember { Executors.newSingleThreadExecutor() }
+    
+    // ML Kit Face Detector
+    val faceDetectorOptions = remember {
+        FaceDetectorOptions.Builder()
+            .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
+            .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_NONE)
+            .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
+            .setMinFaceSize(0.15f)
+            .enableTracking()
+            .build()
+    }
+    
+    val faceDetector: FaceDetector = remember {
+        FaceDetection.getClient(faceDetectorOptions)
+    }
+    
+    // Initialiser CameraX
+    LaunchedEffect(Unit) {
+        val provider = ProcessCameraProvider.getInstance(context).get()
+        cameraProvider = provider
+    }
+    
+    // Configurer la caméra quand le provider est prêt
+    LaunchedEffect(cameraProvider) {
+        val provider = cameraProvider ?: return@LaunchedEffect
+        
+        // Preview
+        val previewUseCase = Preview.Builder().build()
+        preview = previewUseCase
+        
+        // ImageAnalysis pour ML Kit
+        val analysisUseCase = ImageAnalysis.Builder()
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+            .build()
+            .also { analysis ->
+                analysis.setAnalyzer(cameraExecutor) { imageProxy ->
+                    processImageForDebug(imageProxy, faceDetector) { faces ->
+                        detectedFaces = faces
+                        onFacesDetected(faces)
+                    }
+                }
+            }
+        imageAnalysis = analysisUseCase
+        
+        // Lier au lifecycle
+        try {
+            provider.unbindAll()
+            provider.bindToLifecycle(
+                lifecycleOwner,
+                CameraSelector.DEFAULT_FRONT_CAMERA,
+                previewUseCase,
+                analysisUseCase
+            )
+            Timber.d("CameraPreview: Camera bound successfully")
+        } catch (e: Exception) {
+            Timber.e(e, "CameraPreview: Failed to bind camera")
+        }
+    }
+    
+    // Nettoyer à la destruction
+    DisposableEffect(Unit) {
+        onDispose {
+            cameraProvider?.unbindAll()
+            cameraExecutor.shutdown()
+            faceDetector.close()
+        }
+    }
+    
+    // UI
+    Box(modifier = modifier) {
+        // Preview de la caméra
+        AndroidView(
+            factory = { ctx ->
+                PreviewView(ctx).apply {
+                    preview?.setSurfaceProvider(surfaceProvider)
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+        
+        // Overlay pour dessiner les rectangles des visages
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            detectedFaces.forEach { face ->
+                val bounds = face.boundingBox
+                
+                // Les coordonnées ML Kit sont dans l'espace de l'image
+                // On les utilise directement car PreviewView gère déjà le scaling
+                val left = bounds.left.toFloat()
+                val top = bounds.top.toFloat()
+                val right = bounds.right.toFloat()
+                val bottom = bounds.bottom.toFloat()
+                
+                val width = right - left
+                val height = bottom - top
+                
+                // Dessiner le rectangle vert autour du visage
+                drawRect(
+                    color = androidx.compose.ui.graphics.Color(0xFF4CAF50), // Vert
+                    topLeft = Offset(left, top),
+                    size = Size(width, height),
+                    style = Stroke(width = 4.dp.toPx())
+                )
+                
+                // Dessiner un point au centre du visage
+                val centerX = left + width / 2f
+                val centerY = top + height / 2f
+                drawCircle(
+                    color = androidx.compose.ui.graphics.Color(0xFF4CAF50),
+                    radius = 8.dp.toPx(),
+                    center = Offset(centerX, centerY)
+                )
+            }
+        }
+        
+        // Indicateur de debug en haut à droite
+        Card(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(8.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f)
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(8.dp)
+            ) {
+                Text(
+                    text = "📷 Debug Caméra",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Text(
+                    text = "${detectedFaces.size} visage(s)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Traite une image pour la détection de visages (debug)
+ */
+@androidx.camera.core.ExperimentalGetImage
+private fun processImageForDebug(
+    imageProxy: ImageProxy,
+    faceDetector: FaceDetector,
+    onFacesDetected: (List<Face>) -> Unit
+) {
+    val mediaImage = imageProxy.image ?: run {
+        imageProxy.close()
+        return
+    }
+    
+    val image = InputImage.fromMediaImage(
+        mediaImage,
+        imageProxy.imageInfo.rotationDegrees
+    )
+    
+    faceDetector.process(image)
+        .addOnSuccessListener { faces ->
+            Timber.d("CameraPreview: Detected ${faces.size} face(s)")
+            onFacesDetected(faces)
+        }
+        .addOnFailureListener { e ->
+            Timber.e(e, "CameraPreview: Face detection failed")
+            onFacesDetected(emptyList())
+        }
+        .addOnCompleteListener {
+            imageProxy.close()
+        }
+}
+

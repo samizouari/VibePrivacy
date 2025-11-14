@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.privacyguard.R
 import com.privacyguard.ui.theme.PrivacyGuardTheme
 // import dagger.hilt.android.AndroidEntryPoint // TODO: Réactiver au Jour 2
@@ -178,6 +179,37 @@ fun MainScreen() {
                     )
                 }
             }
+        }
+        
+        // Afficher la prévisualisation de la caméra avec détection de visages si protection activée
+        if (isProtectionEnabled) {
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                CameraPreviewWithFaceDetection(
+                    modifier = Modifier.fillMaxSize(),
+                    onFacesDetected = { faces ->
+                        // Optionnel: Mettre à jour l'UI avec le nombre de visages
+                        Timber.d("MainActivity: ${faces.size} visage(s) détecté(s) dans la preview")
+                    }
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text(
+                text = "💡 Prévisualisation debug : Les visages détectés sont encadrés en vert",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
         }
     }
 }

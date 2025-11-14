@@ -678,6 +678,130 @@ java.lang.IllegalAccessError: KaptJavaCompiler cannot access JavaCompiler
 
 ---
 
+### Phase 5 : Jour 1 Après-midi - Permissions & Service ✅
+
+**Date** : 14 novembre 2024 (après-midi)  
+**Temps écoulé** : ~1.5h  
+**Commits** : 4 commits  
+**Résultat** : Système de permissions complet + Foreground Service fonctionnel
+
+---
+
+#### Fonctionnalités Implémentées
+
+##### 1. Système de Permissions Runtime
+
+**Fichiers créés** :
+- `utils/PermissionManager.kt` (~150 lignes)
+  - Permissions critiques : Caméra, Microphone
+  - Permissions optionnelles : Localisation
+  - Méthodes de vérification (isGranted, areCriticalPermissionsGranted, etc.)
+  - Descriptions user-friendly
+  - Support SYSTEM_ALERT_WINDOW (overlay)
+
+- `ui/PermissionsScreen.kt` (~200 lignes)
+  - UI Compose élégante pour demander permissions
+  - Cards individuelles pour chaque permission
+  - Badge "REQUIS" pour permissions critiques
+  - Icônes de statut (✓ / ✗)
+  - Bouton "Autoriser les permissions"
+  - Lien vers paramètres système
+  - Section "Votre vie privée d'abord" (0% télémétrie)
+
+**Intégration** :
+- MainActivity vérifie automatiquement les permissions au démarrage
+- Navigation fluide entre PermissionsScreen et MainScreen
+- LaunchedEffect pour vérification asynchrone
+
+**Apprentissage** :
+- `rememberLauncherForActivityResult` pour demander plusieurs permissions à la fois
+- `ActivityResultContracts.RequestMultiplePermissions()` vs ancien `requestPermissions()`
+- Importance de l'UX : expliquer POURQUOI on a besoin de chaque permission
+
+---
+
+##### 2. Foreground Service (PrivacyGuardService)
+
+**Fichier créé** :
+- `service/PrivacyGuardService.kt` (~250 lignes)
+  - Service de premier plan avec notification persistante
+  - Actions : START_PROTECTION, STOP_PROTECTION, PAUSE_PROTECTION
+  - Notification channel (Android O+)
+  - Notification dynamique selon l'état (active/pause)
+  - START_STICKY pour redémarrage automatique
+  - Timber logging pour debugging
+  - Hooks TODO pour capteurs (Jour 2)
+
+**Architecture** :
+```kotlin
+MainActivity (UI)
+    ↓
+PrivacyGuardService.startService(context)
+    ↓
+Service démarre en FOREGROUND
+    ↓
+Notification persistante affichée
+    ↓
+TODO Jour 2: Démarre les capteurs (Camera, Audio, Motion, Proximity)
+```
+
+**Notification** :
+- Titre : "🛡️ Protection active"
+- Texte : "Privacy Guard surveille votre environnement"
+- Click → Ouvre MainActivity
+- Non-supprimable par swipe
+- Priorité basse (non-intrusive)
+
+**AndroidManifest** :
+```xml
+<service
+    android:name=".service.PrivacyGuardService"
+    android:exported="false"
+    android:foregroundServiceType="camera|microphone" />
+
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+```
+
+**Apprentissage** :
+- Foreground service obligatoire depuis Android O pour tâches longues
+- `foregroundServiceType` obligatoire depuis Android 14 (Upside Down Cake)
+- FOREGROUND_SERVICE_CAMERA et FOREGROUND_SERVICE_MICROPHONE requis pour accès capteurs
+- START_STICKY vs START_NOT_STICKY : comportement si tué par le système
+
+---
+
+#### Statistiques Jour 1 Après-midi
+
+| Métrique | Valeur |
+|----------|--------|
+| **Temps** | ~1.5 heures |
+| **Commits** | 4 commits |
+| **Fichiers créés** | 3 fichiers |
+| **Lignes de code** | ~600 lignes |
+| **Tests manuels** | Permissions flow testé |
+
+---
+
+#### Validation Jour 1 Complet ✅
+
+**Matin** :
+- [x] Projet compile
+- [x] App se lance
+- [x] UI interactive
+
+**Après-midi** :
+- [x] Système de permissions complet
+- [x] PermissionsScreen avec UI moderne
+- [x] Foreground service implémenté
+- [x] Notification persistante
+- [x] Start/Stop depuis MainActivity
+- [x] Service survit aux redémarrages système
+
+**JOUR 1 = 100% TERMINÉ** ✅✅
+
+---
+
 ## 📈 Métriques du Projet
 
 ### Temps Investi (Estimé)

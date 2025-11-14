@@ -1,4 +1,4 @@
-kit# Implementation Plan: Privacy Guard
+kitgi# Implementation Plan: Privacy Guard
 
 **Branch**: `001-privacy-guard-app` | **Date**: 2025-11-14 | **Spec**: [specs/001-privacy-guard-app/spec.md](specs/001-privacy-guard-app/spec.md)
 **Input**: Feature specification from `specs/001-privacy-guard-app/spec.md`

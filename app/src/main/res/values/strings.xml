@@ -7,4 +7,20 @@
     
     <!-- Accessibility Service -->
     <string name="accessibility_service_description">Privacy Guard utilise le service d\'accessibilité pour afficher une protection sur toutes les applications et détecter quelle application est active. Privacy Guard ne lit pas le contenu de votre écran et ne capture pas vos frappes clavier. Toutes les données sont traitées localement sur votre appareil.</string>
+    
+    <!-- Permissions -->
+    <string name="permissions_title">Permissions nécessaires</string>
+    <string name="permissions_explanation">Privacy Guard a besoin de quelques permissions pour vous protéger efficacement.</string>
+    <string name="permission_camera">Caméra</string>
+    <string name="permission_microphone">Microphone</string>
+    <string name="permission_location">Localisation</string>
+    <string name="permission_camera_desc">Détecte les personnes qui regardent votre écran</string>
+    <string name="permission_microphone_desc">Détecte les bruits suspects autour de vous</string>
+    <string name="permission_location_desc">Active la protection dans les lieux publics</string>
+    
+    <!-- Service -->
+    <string name="service_notification_title_active">Protection active</string>
+    <string name="service_notification_text_active">Privacy Guard surveille votre environnement</string>
+    <string name="service_notification_title_paused">Protection en pause</string>
+    <string name="service_notification_text_paused">Cliquez pour reprendre la protection</string>
 </resources>

@@ -7,11 +7,13 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -47,7 +49,24 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainScreen() {
+    val context = LocalContext.current
+    var showPermissionsScreen by remember { mutableStateOf(false) }
     var isProtectionEnabled by remember { mutableStateOf(false) }
+    
+    // Vérifier les permissions au démarrage
+    LaunchedEffect(Unit) {
+        showPermissionsScreen = !com.privacyguard.utils.PermissionManager.areCriticalPermissionsGranted(context)
+    }
+    
+    // Afficher l'écran de permissions si nécessaire
+    if (showPermissionsScreen) {
+        PermissionsScreen(
+            onPermissionsGranted = {
+                showPermissionsScreen = false
+            }
+        )
+        return
+    }
     
     Column(
         modifier = Modifier
@@ -83,6 +102,13 @@ fun MainScreen() {
         Button(
             onClick = { 
                 isProtectionEnabled = !isProtectionEnabled
+                
+                // Démarrer ou arrêter le service
+                if (isProtectionEnabled) {
+                    com.privacyguard.service.PrivacyGuardService.startService(context)
+                } else {
+                    com.privacyguard.service.PrivacyGuardService.stopService(context)
+                }
             },
             modifier = Modifier.fillMaxWidth(),
             colors = if (isProtectionEnabled) {

@@ -37,7 +37,6 @@ fun CameraPreviewWithFaceDetection(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val scope = rememberCoroutineScope()
     
     var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
     var preview by remember { mutableStateOf<Preview?>(null) }
@@ -69,37 +68,43 @@ fun CameraPreviewWithFaceDetection(
     
     // Configurer la caméra quand le provider est prêt
     LaunchedEffect(cameraProvider) {
-        val provider = cameraProvider ?: return@LaunchedEffect
+        val provider = cameraProvider ?: run {
+            Timber.w("CameraPreview: Camera provider is null")
+            return@LaunchedEffect
+        }
         
-        // Preview
-        val previewUseCase = Preview.Builder().build()
-        preview = previewUseCase
-        
-        // ImageAnalysis pour ML Kit
-        val analysisUseCase = ImageAnalysis.Builder()
-            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-            .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
-            .build()
-            .also { analysis ->
-                analysis.setAnalyzer(cameraExecutor) { imageProxy ->
-                    processImageForDebug(imageProxy, faceDetector) { faces ->
-                        detectedFaces = faces
-                        onFacesDetected(faces)
+        try {
+            // Preview
+            val previewUseCase = Preview.Builder()
+                .build()
+            preview = previewUseCase
+            Timber.d("CameraPreview: Preview use case created")
+            
+            // ImageAnalysis pour ML Kit
+            val analysisUseCase = ImageAnalysis.Builder()
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+                .build()
+                .also { analysis ->
+                    analysis.setAnalyzer(cameraExecutor) { imageProxy ->
+                        processImageForDebug(imageProxy, faceDetector) { faces ->
+                            detectedFaces = faces
+                            onFacesDetected(faces)
+                        }
                     }
                 }
-            }
-        imageAnalysis = analysisUseCase
-        
-        // Lier au lifecycle
-        try {
+            imageAnalysis = analysisUseCase
+            Timber.d("CameraPreview: ImageAnalysis use case created")
+            
+            // Lier au lifecycle
             provider.unbindAll()
-            provider.bindToLifecycle(
+            val camera = provider.bindToLifecycle(
                 lifecycleOwner,
                 CameraSelector.DEFAULT_FRONT_CAMERA,
                 previewUseCase,
                 analysisUseCase
             )
-            Timber.d("CameraPreview: Camera bound successfully")
+            Timber.i("CameraPreview: Camera bound successfully, camera info: ${camera.cameraInfo}")
         } catch (e: Exception) {
             Timber.e(e, "CameraPreview: Failed to bind camera")
         }
@@ -120,10 +125,28 @@ fun CameraPreviewWithFaceDetection(
         AndroidView(
             factory = { ctx ->
                 PreviewView(ctx).apply {
-                    preview?.setSurfaceProvider(surfaceProvider)
+                    scaleType = PreviewView.ScaleType.FILL_CENTER
+                    implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+                    
+                    // Attendre que le preview soit prêt avant de setter le surface provider
+                    preview?.let { previewUseCase ->
+                        previewUseCase.setSurfaceProvider(surfaceProvider)
+                        Timber.d("CameraPreview: Surface provider set for preview")
+                    } ?: run {
+                        Timber.w("CameraPreview: Preview not ready yet, will set later")
+                    }
                 }
             },
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            update = { previewView ->
+                // Mettre à jour le surface provider si le preview devient disponible
+                preview?.let { previewUseCase ->
+                    if (previewView.surfaceProvider == null) {
+                        previewUseCase.setSurfaceProvider(previewView.surfaceProvider)
+                        Timber.d("CameraPreview: Surface provider updated")
+                    }
+                }
+            }
         )
         
         // Overlay pour dessiner les rectangles des visages

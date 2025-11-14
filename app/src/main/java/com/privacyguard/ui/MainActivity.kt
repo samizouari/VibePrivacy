@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -186,13 +187,12 @@ fun MainScreen() {
         if (isProtectionEnabled) {
             Spacer(modifier = Modifier.height(16.dp))
             
-            Card(
+            // Utiliser Box au lieu de Card pour éviter les problèmes de fond
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(300.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
+                    .height(300.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 CameraPreviewWithFaceDetection(
                     modifier = Modifier.fillMaxSize(),

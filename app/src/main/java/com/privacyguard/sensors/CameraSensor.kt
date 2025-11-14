@@ -62,16 +62,42 @@ class CameraSensor(
     override suspend fun onStart() {
         Timber.d("CameraSensor: Initializing camera...")
         
-        withContext(Dispatchers.Main) {
-            val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-            cameraProviderFuture.addListener({
-                try {
-                    cameraProvider = cameraProviderFuture.get()
-                    bindCameraUseCases()
-                } catch (e: Exception) {
-                    Timber.e(e, "CameraSensor: Failed to initialize camera")
-                }
-            }, ContextCompat.getMainExecutor(context))
+        try {
+            withContext(Dispatchers.Main) {
+                val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+                cameraProviderFuture.addListener({
+                    try {
+                        cameraProvider = cameraProviderFuture.get()
+                        bindCameraUseCases()
+                    } catch (e: Exception) {
+                        Timber.e(e, "CameraSensor: Failed to initialize camera in listener")
+                        // Émettre des données vides pour éviter le crash
+                        emitData(
+                            CameraData(
+                                timestamp = System.currentTimeMillis(),
+                                threatLevel = ThreatLevel.NONE,
+                                confidence = 0f,
+                                facesDetected = 0,
+                                facesLookingAtScreen = 0,
+                                unknownFacesCount = 0
+                            )
+                        )
+                    }
+                }, ContextCompat.getMainExecutor(context))
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "CameraSensor: Failed to start camera initialization")
+            // Émettre des données vides pour éviter le crash
+            emitData(
+                CameraData(
+                    timestamp = System.currentTimeMillis(),
+                    threatLevel = ThreatLevel.NONE,
+                    confidence = 0f,
+                    facesDetected = 0,
+                    facesLookingAtScreen = 0,
+                    unknownFacesCount = 0
+                )
+            )
         }
     }
     

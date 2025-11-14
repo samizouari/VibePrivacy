@@ -83,19 +83,19 @@ fun CameraPreviewWithFaceDetection(
             preview = previewUseCase
             Timber.d("CameraPreview: Preview use case created")
             
-            // ImageAnalysis pour ML Kit
-            val analysisUseCase = ImageAnalysis.Builder()
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
-                .build()
-                .also { analysis ->
-                    analysis.setAnalyzer(cameraExecutor) { imageProxy ->
-                        processImageForDebug(imageProxy, faceDetector) { faces ->
-                            detectedFaces = faces
-                            onFacesDetected(faces)
-                        }
-                    }
-                }
+                   // ImageAnalysis pour ML Kit
+                   val analysisUseCase = ImageAnalysis.Builder()
+                       .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                       .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888) // YUV pour ML Kit
+                       .build()
+                       .also { analysis ->
+                           analysis.setAnalyzer(cameraExecutor) { imageProxy ->
+                               processImageForDebug(imageProxy, faceDetector) { faces ->
+                                   detectedFaces = faces
+                                   onFacesDetected(faces)
+                               }
+                           }
+                       }
             imageAnalysis = analysisUseCase
             Timber.d("CameraPreview: ImageAnalysis use case created")
             

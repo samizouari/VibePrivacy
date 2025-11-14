@@ -131,7 +131,7 @@ class CameraSensor(
         // ImageAnalysis pour ML Kit
         imageAnalysis = ImageAnalysis.Builder()
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-            .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+            .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888) // YUV pour ML Kit (RGBA non supporté par ML Kit)
             .build()
             .also { analysis ->
                 analysis.setAnalyzer(cameraExecutor) { imageProxy ->

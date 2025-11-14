@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -122,6 +123,15 @@ fun CameraPreviewWithFaceDetection(
     
     // UI
     Box(modifier = modifier) {
+        // Debug: Fond coloré pour voir si le Box est bien rendu
+        // Si vous voyez du bleu, le Box fonctionne mais pas le PreviewView
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(-1f)
+                .background(Color.Blue.copy(alpha = 0.1f))
+        )
+        
         // Preview de la caméra
         AndroidView(
             factory = { ctx ->
@@ -139,15 +149,6 @@ fun CameraPreviewWithFaceDetection(
                 previewViewRef = previewView
             }
         )
-        
-        // Debug: Fond coloré pour voir si le PreviewView est bien là
-        // (à retirer une fois que ça fonctionne)
-        // Box(
-        //     modifier = Modifier
-        //         .fillMaxSize()
-        //         .zIndex(-1f)
-        //         .background(Color.Red.copy(alpha = 0.3f))
-        // )
         
         // Connecter le preview use case au PreviewView quand les deux sont prêts
         LaunchedEffect(preview, previewViewRef) {

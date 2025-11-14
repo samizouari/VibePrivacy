@@ -161,12 +161,14 @@ fun CameraPreviewWithFaceDetection(
         }
         
         // Overlay pour dessiner les rectangles des visages (au-dessus du PreviewView)
-        Canvas(
-            modifier = Modifier
-                .fillMaxSize()
-                .zIndex(1f) // S'assurer que l'overlay est au-dessus
-        ) {
-            detectedFaces.forEach { face ->
+        // Ne dessiner que s'il y a des visages détectés
+        if (detectedFaces.isNotEmpty()) {
+            Canvas(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .zIndex(1f) // S'assurer que l'overlay est au-dessus
+            ) {
+                detectedFaces.forEach { face ->
                 val bounds = face.boundingBox
                 
                 // Les coordonnées ML Kit sont dans l'espace de l'image
@@ -195,6 +197,7 @@ fun CameraPreviewWithFaceDetection(
                     radius = 8.dp.toPx(),
                     center = Offset(centerX, centerY)
                 )
+                }
             }
         }
         

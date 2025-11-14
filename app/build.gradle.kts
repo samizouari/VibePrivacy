@@ -93,6 +93,7 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.service) // Pour LifecycleService (needed for CameraX in service)
     
     // Jetpack Compose
     val composeBom = platform(libs.androidx.compose.bom)

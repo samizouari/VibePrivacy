@@ -10,12 +10,18 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.lifecycle.LifecycleService
+import androidx.lifecycle.lifecycleScope
 import com.privacyguard.R
+import com.privacyguard.sensors.SensorManager
 import com.privacyguard.ui.MainActivity
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
 /**
  * Service de premier plan (Foreground Service) pour Privacy Guard
+ * 
+ * Hérite de LifecycleService pour être compatible avec CameraX
  * 
  * Ce service tourne en continu pour :
  * - Surveiller les capteurs (caméra, micro, mouvement, etc.)
@@ -27,7 +33,7 @@ import timber.log.Timber
  * - Lifecycle indépendant de l'UI
  * - Communication via Intents et Broadcasts
  */
-class PrivacyGuardService : Service() {
+class PrivacyGuardService : LifecycleService() {
     
     companion object {
         private const val NOTIFICATION_CHANNEL_ID = "privacy_guard_service"
@@ -75,12 +81,25 @@ class PrivacyGuardService : Service() {
     
     private var isPaused = false
     
+    // Gestionnaire de capteurs
+    private var sensorManager: SensorManager? = null
+    
     override fun onCreate() {
         super.onCreate()
         Timber.d("PrivacyGuardService onCreate()")
         
         // Créer le canal de notification
         createNotificationChannel()
+        
+        // Initialiser le gestionnaire de capteurs
+        try {
+            sensorManager = SensorManager(this, this).apply {
+                initialize()
+            }
+            Timber.i("PrivacyGuardService: SensorManager initialized")
+        } catch (e: Exception) {
+            Timber.e(e, "PrivacyGuardService: Failed to initialize SensorManager")
+        }
     }
     
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -113,7 +132,12 @@ class PrivacyGuardService : Service() {
         isRunning = false
         isPaused = false
         
-        // TODO Jour 2: Arrêter tous les capteurs
+        // Arrêter tous les capteurs
+        lifecycleScope.launch {
+            sensorManager?.stopAll()
+            sensorManager?.cleanup()
+        }
+        
         // TODO Jour 4: Retirer l'overlay si présent
     }
     
@@ -129,13 +153,23 @@ class PrivacyGuardService : Service() {
         isRunning = true
         isPaused = false
         
-        // TODO Jour 2: Initialiser et démarrer les capteurs
-        // - CameraSensor
-        // - AudioSensor
-        // - MotionSensor
-        // - ProximitySensor
-        
-        // TODO Jour 3: Démarrer l'analyse de fusion des capteurs
+        // Démarrer tous les capteurs
+        lifecycleScope.launch {
+            try {
+                sensorManager?.startAll()
+                Timber.i("All sensors started successfully")
+                
+                // TODO Jour 3: Analyser les données combinées
+                // sensorManager?.combinedSensorData?.collect { snapshot ->
+                //     val (threatLevel, confidence) = snapshot.calculateOverallThreat()
+                //     if (threatLevel >= ThreatLevel.MEDIUM) {
+                //         // Déclencher l'overlay
+                //     }
+                // }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to start sensors")
+            }
+        }
         
         Timber.i("Privacy protection started successfully")
     }
@@ -149,7 +183,11 @@ class PrivacyGuardService : Service() {
         isRunning = false
         isPaused = false
         
-        // TODO Jour 2: Arrêter tous les capteurs
+        // Arrêter tous les capteurs
+        lifecycleScope.launch {
+            sensorManager?.stopAll()
+        }
+        
         // TODO Jour 4: Retirer l'overlay
         
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -170,7 +208,10 @@ class PrivacyGuardService : Service() {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(NOTIFICATION_ID, createNotification(isActive = false))
         
-        // TODO Jour 2: Mettre en pause les capteurs (mais ne pas les détruire)
+        // Mettre en pause les capteurs
+        lifecycleScope.launch {
+            sensorManager?.pauseAll()
+        }
         
         Timber.i("Privacy protection paused")
     }

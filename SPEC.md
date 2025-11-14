@@ -187,12 +187,12 @@ fun processImage(image: Bitmap): FaceDetectionResult {
 ## 📅 État Actuel du Projet
 
 ### Jour en Cours
-**JOUR 0** - Préparation terminée, prêt à démarrer Jour 1
+**JOUR 1 - Matin** ✅ TERMINÉ
 
 ### Prochaine Tâche
-**Setup Projet Android** (Jour 1 - Matin)
+**Jour 1 - Après-midi** : Classes de base (AppModule, DatabaseModule, etc.)
 
-### Fichiers Créés
+### Fichiers Documentation Créés
 - [x] README.md
 - [x] ARCHITECTURE.md
 - [x] FEATURES.md
@@ -208,8 +208,25 @@ fun processImage(image: Bitmap): FaceDetectionResult {
 - [x] WORKFLOW_VIBE_CODING_TEMPLATE.md
 - [x] SPEC.md (ce fichier)
 
-### Fichiers Code Créés
-- [ ] Aucun encore (on va commencer !)
+### Fichiers Code Créés (Jour 1 - Matin)
+- [x] app/build.gradle.kts (corrigé et complété)
+- [x] gradle/libs.versions.toml (toutes dépendances)
+- [x] build.gradle.kts (plugin Hilt ajouté)
+- [x] app/src/main/AndroidManifest.xml (permissions + config)
+- [x] MainActivity.kt (UI Compose basique)
+- [x] Color.kt (palette sobre)
+- [x] Theme.kt (Material 3 + dark mode)
+- [x] Typography.kt (typographie moderne)
+- [x] strings.xml (français)
+- [x] themes.xml (Material 3)
+
+### Git
+- [x] Branche "sami" créée
+- [x] Premier commit pushé sur GitHub
+- [x] Lien: https://github.com/samizouari/VibePrivacy/tree/sami
+
+### Documentation Workflow
+- [x] WORKFLOW_VIBE_CODING_TEMPLATE.md Phase 3 complétée
 
 ---
 

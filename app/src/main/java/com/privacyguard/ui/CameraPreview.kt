@@ -141,10 +141,8 @@ fun CameraPreviewWithFaceDetection(
             update = { previewView ->
                 // Mettre à jour le surface provider si le preview devient disponible
                 preview?.let { previewUseCase ->
-                    if (previewView.surfaceProvider == null) {
-                        previewUseCase.setSurfaceProvider(previewView.surfaceProvider)
-                        Timber.d("CameraPreview: Surface provider updated")
-                    }
+                    previewUseCase.setSurfaceProvider(previewView.surfaceProvider)
+                    Timber.d("CameraPreview: Surface provider updated in update callback")
                 }
             }
         )

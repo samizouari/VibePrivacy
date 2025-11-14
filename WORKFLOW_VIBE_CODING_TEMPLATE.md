@@ -589,6 +589,95 @@ Explique :
 
 ---
 
+### Phase 4 : Résolution des Erreurs de Build et Premier Succès - Jour 1 ✅
+
+#### 🎉 MILESTONE MAJEURE : PREMIÈRE COMPILATION RÉUSSIE !
+
+**Date** : 14 novembre 2024  
+**Temps écoulé** : ~2h de debugging  
+**Nombre de commits** : 12 commits  
+**Résultat** : Application fonctionnelle avec UI interactive
+
+---
+
+#### Erreurs Rencontrées et Solutions
+
+##### Erreur 1 : Plugin `kotlin-compose` introuvable
+
+**Symptôme** :
+```
+Plugin [id: 'org.jetbrains.kotlin.plugin.compose', version: '1.9.10'] was not found
+```
+
+**Cause** : Plugin incompatible avec Kotlin 1.9.10 (uniquement pour Kotlin 2.0+)
+
+**Solution** : Retiré le plugin, configuration Compose via `buildFeatures` et `composeOptions`
+
+---
+
+##### Erreur 2 : Ressource `accessibility_service_description` manquante
+
+**Symptôme** : `AAPT: error: resource string/accessibility_service_description not found`
+
+**Solution** : Ajout de la string dans `strings.xml`
+
+---
+
+##### Erreur 3 : `IllegalAccessError` KAPT avec Java 17+
+
+**Symptôme** :
+```
+java.lang.IllegalAccessError: KaptJavaCompiler cannot access JavaCompiler
+```
+
+**Cause** : KAPT ne peut pas accéder aux modules internes de Java 17+
+
+**Tentatives** :
+1. ❌ Ajout de flags JVM dans `gradle.properties`
+2. ❌ Configuration KAPT dans `build.gradle.kts`
+
+**Solution Finale (Pragmatique)** :
+- ✅ Désactivation temporaire de KAPT et Hilt (pas nécessaires pour MVP Jour 1)
+- Commenté plugins, dépendances, et annotations
+- TODO: Réactiver au Jour 2
+
+**Apprentissage** : Pour un MVP, retirer temporairement les dépendances non utilisées. Approche itérative.
+
+---
+
+##### Erreur 4 : Fichiers Room/Hilt sans dépendances
+
+**Symptôme** : `Unresolved reference: Database`
+
+**Solution** : Suppression temporaire de 5 fichiers créés par Gemini (DAO, Database, Modules DI)
+
+---
+
+##### Erreur 5 : Dossier `VibePrivacy/` en doublon
+
+**Symptôme** : `warning: adding embedded git repository`
+
+**Solution** : `git rm --cached VibePrivacy`
+
+---
+
+#### Validation du MVP Jour 1 Matin ✅
+
+- [x] Projet compile sans erreurs
+- [x] App se lance sur device physique
+- [x] UI Compose fonctionnelle
+- [x] Thème sobre (noir/blanc/gris/bleu)
+- [x] Texte en français
+- [x] Bouton interactif avec feedback visuel
+- [x] État de protection (on/off) avec toggle
+- [x] Card de statut dynamique
+- [x] Dark mode support
+- [x] Code pushé sur branche `sami`
+
+**Commits de cette phase** : 12 commits (de `3825cc6` à `0d10346`)
+
+---
+
 ## 📈 Métriques du Projet
 
 ### Temps Investi (Estimé)

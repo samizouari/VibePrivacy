@@ -71,13 +71,7 @@ abstract class BaseSensor<T : SensorData>(
         get() = _isActive.value
     
     override val dataFlow: Flow<T>
-        get() = _dataFlow.asStateFlow().filterNotNull()
-    
-    /**
-     * Extension pour filter les valeurs null
-     */
-    private fun <T> StateFlow<T?>.filterNotNull(): Flow<T> = 
-        this.mapNotNull { it }
+        get() = _dataFlow.asStateFlow().mapNotNull { it }
     
     override suspend fun start() {
         if (_isActive.value) {

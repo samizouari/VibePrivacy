@@ -204,14 +204,18 @@ class SensorManager(
     
     private suspend fun startProximitySensor() {
         try {
+            Timber.d("SensorManager: Starting ProximitySensor...")
             proximitySensor.start()
+            Timber.i("SensorManager: ProximitySensor started, starting data collection...")
             scope.launch {
                 proximitySensor.dataFlow.collect { data ->
                     _proximityData.value = data
+                    Timber.v("SensorManager: ProximitySensor data received: distance=${data.distance}cm, threat=${data.threatLevel}")
                 }
             }
+            Timber.i("SensorManager: ProximitySensor data collection started")
         } catch (e: Exception) {
-            Timber.e(e, "SensorManager: Failed to start proximity sensor")
+            Timber.e(e, "SensorManager: Failed to start proximity sensor: ${e.message}")
         }
     }
     

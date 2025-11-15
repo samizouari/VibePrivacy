@@ -36,8 +36,11 @@ class ProximitySensor(context: Context) : BaseSensor<ProximityData>(context, "Pr
     private val nearThreshold = 3.0f // < 3cm = proche
     
     override suspend fun onStart() {
+        Timber.d("ProximitySensor: onStart() called")
+        
         if (proximitySensor == null) {
-            Timber.w("ProximitySensor: Proximity sensor not available on this device")
+            Timber.w("ProximitySensor: ⚠️ Proximity sensor NOT AVAILABLE on this device")
+            Timber.w("ProximitySensor: This device does not have a proximity sensor hardware")
             // Émettre des données par défaut (pas de capteur)
             emitData(
                 ProximityData(
@@ -52,11 +55,11 @@ class ProximitySensor(context: Context) : BaseSensor<ProximityData>(context, "Pr
             return
         }
         
-        Timber.d("ProximitySensor: Starting proximity detection...")
+        Timber.i("ProximitySensor: ✅ Proximity sensor hardware found, starting detection...")
         
         // Récupérer la portée maximale du capteur
         maxRange = proximitySensor.maximumRange
-        Timber.d("ProximitySensor: Max range = ${maxRange}cm")
+        Timber.i("ProximitySensor: Max range = ${maxRange}cm")
         
         sensorManager.registerListener(
             this,
@@ -64,7 +67,7 @@ class ProximitySensor(context: Context) : BaseSensor<ProximityData>(context, "Pr
             SensorManager.SENSOR_DELAY_NORMAL
         )
         
-        Timber.i("ProximitySensor: Proximity detection started")
+        Timber.i("ProximitySensor: ✅ Proximity detection started and listener registered")
     }
     
     override suspend fun onStop() {
@@ -78,7 +81,10 @@ class ProximitySensor(context: Context) : BaseSensor<ProximityData>(context, "Pr
     }
     
     override fun onSensorChanged(event: SensorEvent?) {
-        if (event?.sensor?.type != Sensor.TYPE_PROXIMITY) return
+        if (event?.sensor?.type != Sensor.TYPE_PROXIMITY) {
+            Timber.w("ProximitySensor: Received sensor event but type is not PROXIMITY: ${event?.sensor?.type}")
+            return
+        }
         
         val timestamp = System.currentTimeMillis()
         
@@ -104,7 +110,7 @@ class ProximitySensor(context: Context) : BaseSensor<ProximityData>(context, "Pr
         )
         
         val sensorType = if ((distance == 0f || distance == maxRange) && maxRange > 0f) "binary" else "continuous"
-        Timber.v("ProximitySensor: Distance=${distance}cm, isNear=$isNear, threat=$threatLevel, type=$sensorType")
+        Timber.d("ProximitySensor: 📊 Distance=${distance}cm, isNear=$isNear, threat=$threatLevel, type=$sensorType, confidence=$confidence")
     }
     
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {

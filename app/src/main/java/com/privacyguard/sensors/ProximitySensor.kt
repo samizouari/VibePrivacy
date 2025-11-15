@@ -15,12 +15,20 @@ import timber.log.Timber
  * Capteur de proximité
  * 
  * Détecte la présence d'objets proches du téléphone.
- * Utile pour :
- * - Détecter quelqu'un qui s'approche très près
- * - Détecter la main devant l'écran
- * - Compléter la détection caméra
  * 
- * Note: Le capteur de proximité a généralement une portée limitée (5-10cm).
+ * ⚠️ LIMITATION HARDWARE :
+ * La plupart des téléphones Android ont un capteur de proximité BINAIRE :
+ * - 0cm = objet très proche (< 1cm)
+ * - maxRange (généralement 5cm) = rien de proche
+ * 
+ * UTILITÉ DANS L'APP :
+ * - Indicateur complémentaire (poids 10% dans fusion)
+ * - Détecte main/visage très proche quand distance = 0cm
+ * - Complète la caméra si elle ne voit pas (angle, obscurité)
+ * - Détecte occultations rapides (main passant devant)
+ * 
+ * NOTE : Ce capteur est LIMITÉ mais UTILE comme signal complémentaire.
+ * Il ne remplace pas la caméra mais ajoute une couche de détection.
  */
 class ProximitySensor(context: Context) : BaseSensor<ProximityData>(context, "ProximitySensor"), SensorEventListener {
     

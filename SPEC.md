@@ -187,36 +187,44 @@ fun processImage(image: Bitmap): FaceDetectionResult {
 ## 📅 État Actuel du Projet
 
 ### Jour en Cours
-**JOUR 1 - COMPLET** ✅✅ TERMINÉ AVEC SUCCÈS !
+**JOUR 2 - COMPLET** ✅✅ TERMINÉ AVEC SUCCÈS !
 
 **🎉 MILESTONES ATTEINTES :**
-- ✅ Application fonctionnelle (Matin)
-- ✅ Système de permissions complet (Après-midi)
-- ✅ Foreground Service implémenté (Après-midi)
-- ✅ 16 commits sur branche `sami`
+- ✅ Tous les 4 capteurs implémentés et fonctionnels
+- ✅ Tests unitaires complets pour tous les capteurs
+- ✅ Intégration dans PrivacyGuardService
+- ✅ Testé sur device physique
+- ✅ 20+ commits sur branche `sami`
 
-### Accomplissements Jour 1
+### Accomplissements Jour 2
 
 **Matin** :
-- Configuration projet Android (SDK, dependencies)
-- UI Compose avec thème sobre
-- Bouton toggle protection interactif
+- CameraSensor avec CameraX + ML Kit Face Detection ✅
+- Détection de visages, orientation, proximité ✅
+- Tests unitaires CameraSensor ✅
 
 **Après-midi** :
-- PermissionManager centralisé
-- PermissionsScreen avec UI élégante
-- PrivacyGuardService (foreground service)
-- Notification persistante
-- Intégration complète MainActivity
+- AudioSensor avec AudioRecord ✅
+- MotionSensor avec SensorManager ✅
+- ProximitySensor avec SensorManager ✅
+- Tests unitaires pour tous les capteurs ✅
+- SensorManager pour orchestration ✅
+- Intégration complète dans le service ✅
+
+**Bugs résolus** :
+- Fix format image ML Kit (RGBA → YUV) ✅
+- Fix crash au démarrage protection ✅
+- Amélioration logs ProximitySensor ✅
+- Documentation capteur binaire ✅
 
 ### Prochaine Tâche
-**JOUR 2 - Capteurs** : 
-1. Camera sensor avec ML Kit (face detection)
-2. Audio sensor (niveau sonore)
-3. Motion sensor (accéléromètre)
-4. Proximity sensor
+**JOUR 3 - Fusion et Évaluation** : 
+1. ThreatAssessmentEngine (fusion multi-capteurs)
+2. SensorDataFusion (combinaison des résultats)
+3. Scoring de menace avec seuils Mode Discret
+4. Tests d'intégration
    
-**Note** : Hilt/Room réactivation prévue au Jour 2 pour DI et persistence.
+**Note** : Hilt/Room réactivation prévue au Jour 3 si nécessaire pour persistence.
 
 ### Fichiers Documentation Créés
 - [x] README.md

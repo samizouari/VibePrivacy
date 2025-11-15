@@ -317,32 +317,147 @@ git push -u origin sami
 
 ---
 
-### Phase 4 : Développement Itératif des Capteurs
+### Phase 4 : Développement Itératif des Capteurs - JOUR 2 ✅
 
-#### [À COMPLÉTER JOUR 2]
+#### 🎉 MILESTONE : TOUS LES CAPTEURS IMPLÉMENTÉS ET TESTÉS !
 
-#### Exemple Prompt CameraMonitor
+**Date** : 14 novembre 2024  
+**Temps écoulé** : ~6h (matin + après-midi)  
+**Nombre de commits** : 20+ commits  
+**Résultat** : 4 capteurs fonctionnels avec tests unitaires complets
+
+---
+
+#### Prompt Utilisé pour Implémentation Capteurs
+
 ```
-Implémente CameraMonitor.kt selon SENSORS.md avec :
-- CameraX pour la capture
-- ML Kit Face Detection
-- Détection nombre de visages
-- Estimation distance basique
-- Tests unitaires
+Implémente les 4 capteurs selon SENSORS.md :
+1. CameraSensor avec CameraX + ML Kit Face Detection
+2. AudioSensor avec AudioRecord pour détection niveau sonore
+3. MotionSensor avec SensorManager (accéléromètre)
+4. ProximitySensor avec SensorManager (proximité)
 
-Utilise les meilleures pratiques Kotlin et Coroutines.
+Chaque capteur doit :
+- Hériter de BaseSensor<T>
+- Émettre des données via Flow
+- Évaluer un ThreatLevel
+- Gérer les erreurs gracieusement
+- Logs détaillés avec Timber
+
+Utilise les meilleures pratiques Kotlin, Coroutines, et Flow.
 ```
 
 #### Code Généré
-[Coller le code généré]
 
-#### Tests sur Device
-- [ ] Caméra se lance correctement
-- [ ] Détection de visages fonctionne
-- [ ] Performance acceptable
+**Fichiers créés** :
+- `app/src/main/java/com/privacyguard/sensors/CameraSensor.kt` (332 lignes)
+- `app/src/main/java/com/privacyguard/sensors/AudioSensor.kt` (120 lignes)
+- `app/src/main/java/com/privacyguard/sensors/MotionSensor.kt` (150 lignes)
+- `app/src/main/java/com/privacyguard/sensors/ProximitySensor.kt` (152 lignes)
+- `app/src/main/java/com/privacyguard/sensors/SensorManager.kt` (301 lignes)
+- `app/src/main/java/com/privacyguard/sensors/BaseSensor.kt` (120 lignes)
+- `app/src/main/java/com/privacyguard/sensors/SensorData.kt` (98 lignes)
 
-#### Problèmes Rencontrés
-[Documenter les bugs et comment ils ont été résolus avec l'IA]
+**Extrait clé - CameraSensor** :
+```kotlin
+class CameraSensor(
+    context: Context,
+    private val lifecycleOwner: LifecycleOwner
+) : BaseSensor<CameraData>(context, "CameraSensor") {
+    
+    private lateinit var faceDetector: FaceDetector
+    
+    override suspend fun onStart() {
+        // Configuration CameraX + ML Kit
+        initializeFaceDetector()
+        bindCameraUseCases()
+    }
+    
+    private fun handleFaceDetection(faces: List<Face>, timestamp: Long) {
+        // Évaluation du niveau de menace
+        val threatLevel = when {
+            faces.size > 1 && facesLookingAtScreen > 0 -> ThreatLevel.CRITICAL
+            facesLookingAtScreen > 0 && maxProximityThreat > 0.2f -> ThreatLevel.HIGH
+            facesLookingAtScreen > 0 -> ThreatLevel.MEDIUM
+            faces.size > 0 -> ThreatLevel.LOW
+            else -> ThreatLevel.NONE
+        }
+        
+        emitData(CameraData(...))
+    }
+}
+```
+
+#### Tests sur Device ✅
+
+- [x] Caméra se lance correctement ✅
+- [x] Détection de visages fonctionne ✅
+- [x] Audio détecte niveau sonore ✅
+- [x] Mouvement détecte accélération ✅
+- [x] Proximité détecte objets proches ✅
+- [x] Performance acceptable ✅
+- [x] Tous les capteurs fonctionnent en parallèle ✅
+
+#### Tests Unitaires Créés ✅
+
+**Fichiers créés** :
+- `app/src/test/java/com/privacyguard/sensors/CameraSensorTest.kt` (170 lignes)
+- `app/src/test/java/com/privacyguard/sensors/AudioSensorTest.kt` (100 lignes)
+- `app/src/test/java/com/privacyguard/sensors/MotionSensorTest.kt` (120 lignes)
+- `app/src/test/java/com/privacyguard/sensors/ProximitySensorTest.kt` (110 lignes)
+
+**Couverture** :
+- Tests de logique métier (évaluation ThreatLevel)
+- Tests de calculs (RMS, décibels, magnitude)
+- Tests de seuils (parole, mouvement brusque, proximité)
+- Tests de cas limites (aucun visage, capteur binaire, etc.)
+
+#### Problèmes Rencontrés et Résolus ⚠️
+
+1. **Format d'image ML Kit incompatible**
+   - **Problème** : `IllegalArgumentException: Only JPEG and YUV_420_888 are supported now`
+   - **Cause** : Utilisation de `RGBA_8888` au lieu de `YUV_420_888`
+   - **Solution** : Changé `OUTPUT_IMAGE_FORMAT_RGBA_8888` → `OUTPUT_IMAGE_FORMAT_YUV_420_888`
+   - **Fichiers** : `CameraSensor.kt`, `CameraPreview.kt`
+   - **Commit** : `fix(sensors): change image format from RGBA_8888 to YUV_420_888 for ML Kit`
+
+2. **Crash au démarrage de la protection**
+   - **Problème** : App crashait quelques secondes après "Démarrer la protection"
+   - **Cause** : Initialisation des capteurs dans `onCreate()` avant que le service soit prêt
+   - **Solution** : Déplacé l'initialisation dans `startProtection()` avec gestion d'erreur améliorée
+   - **Fichiers** : `PrivacyGuardService.kt`, `CameraSensor.kt`
+   - **Commit** : `fix(service): fix crash when starting protection`
+
+3. **ProximitySensor non visible dans les logs**
+   - **Problème** : Pas de logs du ProximitySensor
+   - **Cause** : Logs au niveau V (très verbeux) + manque de logs de démarrage
+   - **Solution** : Ajouté logs détaillés (I, D) avec emojis pour faciliter le filtrage
+   - **Fichiers** : `ProximitySensor.kt`, `SensorManager.kt`
+   - **Commit** : `debug(sensors): add detailed logging for ProximitySensor`
+
+4. **ProximitySensor valeurs binaires (0 ou 5cm)**
+   - **Problème** : Utilisateur confus par valeurs binaires
+   - **Cause** : Hardware Android normal (capteur binaire)
+   - **Solution** : Documentation claire dans le code expliquant que c'est normal
+   - **Fichiers** : `ProximitySensor.kt`
+   - **Commit** : `docs(sensors): document proximity sensor limitations and utility`
+
+#### Apprentissages 💡
+
+1. **ML Kit nécessite YUV_420_888** : Toujours vérifier les formats supportés dans la doc
+2. **LifecycleService pour CameraX** : Nécessaire pour lier CameraX dans un service
+3. **Capteurs binaires Android** : Normal, pas un bug
+4. **Tests unitaires sans mocks** : Possible en testant uniquement la logique métier
+5. **Logs structurés** : Emojis et niveaux appropriés facilitent le debug
+
+#### Métriques Jour 2
+
+- **Lignes de code** : ~1200 lignes (capteurs + tests)
+- **Fichiers créés** : 11 fichiers
+- **Tests** : 20+ tests unitaires
+- **Commits** : 8 commits
+- **Temps** : ~6h
+- **Bugs résolus** : 4 bugs majeurs
 
 ---
 

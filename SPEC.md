@@ -187,44 +187,45 @@ fun processImage(image: Bitmap): FaceDetectionResult {
 ## 📅 État Actuel du Projet
 
 ### Jour en Cours
-**JOUR 2 - COMPLET** ✅✅ TERMINÉ AVEC SUCCÈS !
+**JOUR 3 - EN COURS** 🚧
 
-**🎉 MILESTONES ATTEINTES :**
+**🎉 MILESTONES JOUR 2 (COMPLET) :**
 - ✅ Tous les 4 capteurs implémentés et fonctionnels
 - ✅ Tests unitaires complets pour tous les capteurs
 - ✅ Intégration dans PrivacyGuardService
 - ✅ Testé sur device physique
 - ✅ 20+ commits sur branche `sami`
 
-### Accomplissements Jour 2
+### Accomplissements Jour 3
 
-**Matin** :
-- CameraSensor avec CameraX + ML Kit Face Detection ✅
-- Détection de visages, orientation, proximité ✅
-- Tests unitaires CameraSensor ✅
+**Fusion et Évaluation des Menaces** :
+- ✅ `ThreatAssessmentEngine.kt` - Moteur principal de fusion multi-capteurs
+- ✅ `SensorDataFusion.kt` - Combinaison et évaluation des données
+- ✅ `ThreatScorer.kt` - Scoring pondéré (Caméra 40%, Audio 30%, Motion 20%, Proximité 10%)
+- ✅ `ThreatModels.kt` - Modèles (ProtectionMode, SensorWeights, ThreatAssessment, etc.)
+- ✅ Intégration dans `PrivacyGuardService` avec pipeline temps réel
+- ✅ Tests unitaires pour ThreatAssessmentEngine et ThreatScorer
+- ✅ Seuils Mode Discret implémentés (seuil 75/100)
 
-**Après-midi** :
-- AudioSensor avec AudioRecord ✅
-- MotionSensor avec SensorManager ✅
-- ProximitySensor avec SensorManager ✅
-- Tests unitaires pour tous les capteurs ✅
-- SensorManager pour orchestration ✅
-- Intégration complète dans le service ✅
-
-**Bugs résolus** :
-- Fix format image ML Kit (RGBA → YUV) ✅
-- Fix crash au démarrage protection ✅
-- Amélioration logs ProximitySensor ✅
-- Documentation capteur binaire ✅
+**Architecture implémentée** :
+```
+SensorManager (4 capteurs)
+       ↓
+ThreatAssessmentEngine (fusion)
+       ↓ Flow<ThreatAssessment>
+PrivacyGuardService
+       ↓
+handleThreatDetected() → TODO Jour 4: ProtectionExecutor
+```
 
 ### Prochaine Tâche
-**JOUR 3 - Fusion et Évaluation** : 
-1. ThreatAssessmentEngine (fusion multi-capteurs)
-2. SensorDataFusion (combinaison des résultats)
-3. Scoring de menace avec seuils Mode Discret
-4. Tests d'intégration
+**JOUR 4 - Protection et Overlay UI** : 
+1. ProtectionExecutor (logique d'exécution)
+2. SoftMaskingProtection (flou gaussien)
+3. OverlayManager (affichage overlay)
+4. PrivacyIndicator (indicateur flottant)
    
-**Note** : Hilt/Room réactivation prévue au Jour 3 si nécessaire pour persistence.
+**Note** : Hilt/Room réactivation si nécessaire pour persistence.
 
 ### Fichiers Documentation Créés
 - [x] README.md

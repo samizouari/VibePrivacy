@@ -77,34 +77,44 @@
 
 ---
 
-### 🟡 JOUR 3 : Capteurs Mouvement + Fusion
+### 🟡 JOUR 3 : Fusion et Évaluation ✅ COMPLET
 
 #### Matin (4h)
-- [ ] **MotionDetector**
-  - `sensors/motion/MotionDetector.kt`
-  - Accéléromètre
-  - Gyroscope
-  - Détection mouvements brusques
-  - Gestes basiques (grab, flip)
-- [ ] **ProximityWatcher**
-  - `sensors/proximity/ProximityWatcher.kt`
+- [x] **MotionSensor** (fait Jour 2)
+  - `sensors/MotionSensor.kt`
+  - Accéléromètre avec détection mouvements brusques
+- [x] **ProximitySensor** (fait Jour 2)
+  - `sensors/ProximitySensor.kt`
   - Détection objet proche
-- [ ] Tests capteurs
-- [ ] **COMMIT** : "feat(sensors): add motion and proximity detection"
+- [x] Tests capteurs (fait Jour 2)
 
 #### Après-midi (4h)
-- [ ] **ThreatAssessmentEngine**
+- [x] **ThreatAssessmentEngine** ✅
   - `assessment/ThreatAssessmentEngine.kt`
-  - Fusion des 4 capteurs
-  - Scoring simple (pondération)
-  - Seuils pour Mode Discret (75/100)
-- [ ] **SensorDataFusion**
-  - Combinaison des résultats
-  - Pipeline asynchrone
-- [ ] Tests d'intégration
-- [ ] **COMMIT** : "feat(assessment): add threat scoring engine"
+  - Fusion des 4 capteurs en temps réel
+  - Pipeline Flow asynchrone avec debounce
+  - Gestion du contexte (mode, zone confiance, bruit ambiant)
+- [x] **SensorDataFusion** ✅
+  - `assessment/SensorDataFusion.kt`
+  - Combinaison et évaluation des résultats
+  - Identification des raisons de déclenchement
+- [x] **ThreatScorer** ✅
+  - `assessment/ThreatScorer.kt`
+  - Scoring pondéré (Caméra 40%, Audio 30%, Motion 20%, Proximité 10%)
+  - Normalisation des données capteurs
+  - Redistribution des poids si capteurs manquants
+- [x] **Modèles** ✅
+  - `assessment/models/ThreatModels.kt`
+  - ProtectionMode (PARANOIA/BALANCED/DISCRETE/TRUST_ZONE)
+  - SensorWeights, ThreatAssessment, ProtectionAction
+  - Seuils : Paranoïa=20, Équilibré=50, Discret=75
+- [x] Intégration dans PrivacyGuardService ✅
+- [x] Tests unitaires (ThreatAssessmentEngineTest, ThreatScorerTest) ✅
+- [x] **COMMIT** : "feat(assessment): add threat scoring engine with multi-sensor fusion"
 
-**Livrable Jour 3** : Système de détection complet qui calcule un score de menace
+**Livrable Jour 3** : ✅ **TERMINÉ** - Système de détection complet qui calcule un score de menace en temps réel
+
+---
 
 ---
 

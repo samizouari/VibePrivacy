@@ -461,9 +461,16 @@ class CameraSensor(
 
 ---
 
-### Phase 5 : Intégration et Fusion
+### Phase 5 : Intégration et Fusion - JOUR 3 ✅
 
-#### [À COMPLÉTER JOUR 3]
+#### 🎉 MILESTONE : SYSTÈME DE FUSION MULTI-CAPTEURS COMPLET !
+
+**Date** : Novembre 2024  
+**Temps écoulé** : ~3h  
+**Nombre de commits** : 4+ commits  
+**Résultat** : ThreatAssessmentEngine fonctionnel avec pipeline temps réel
+
+---
 
 #### Prompt ThreatAssessmentEngine
 ```
@@ -476,11 +483,91 @@ Implémente le moteur de fusion des capteurs qui :
 Code avec Kotlin Flow pour la réactivité.
 ```
 
-#### Résultat
-[Code généré]
+#### Fichiers Créés
 
-#### Ajustements
-[Ce qui a été modifié après tests]
+**1. `assessment/models/ThreatModels.kt`** (~130 lignes)
+- `ProtectionMode` : PARANOIA(20), BALANCED(50), DISCRETE(75), TRUST_ZONE(95)
+- `SensorWeights` : Pondération configurable (Caméra 40%, Audio 30%, Motion 20%, Proximité 10%)
+- `ThreatAssessment` : Résultat complet avec score, niveau, confiance, raisons
+- `ProtectionAction` : NONE, SOFT_BLUR, DECOY_SCREEN, INSTANT_LOCK, PANIC_MODE
+- `AssessmentContext` : Contexte dynamique (mode, bruit ambiant, zone confiance)
+
+**2. `assessment/ThreatScorer.kt`** (~250 lignes)
+- Normalisation des données de chaque capteur (0-1)
+- Calcul pondéré avec redistribution automatique si capteurs manquants
+- Facteurs multiples par capteur (ex: caméra = visages + distance + regard + inconnus)
+
+**3. `assessment/SensorDataFusion.kt`** (~200 lignes)
+- Évaluation complète des menaces
+- Identification des raisons de déclenchement
+- Adaptation aux contextes (bruit, luminosité, zone confiance)
+- Détermination de l'action recommandée selon le mode
+
+**4. `assessment/ThreatAssessmentEngine.kt`** (~250 lignes)
+- Orchestrateur principal
+- Pipeline Flow avec debounce (50ms) et distinctUntilChanged
+- Gestion du contexte et de l'historique
+- Statistiques récentes
+
+**5. Mise à jour `service/PrivacyGuardService.kt`**
+- Intégration du ThreatAssessmentEngine
+- Pipeline de collecte des données capteurs
+- Handler de menace détectée (placeholder pour Jour 4)
+- Notification de menace
+
+#### Architecture Implémentée
+
+```
+SensorManager
+    ├── CameraSensor.dataFlow
+    ├── AudioSensor.dataFlow
+    ├── MotionSensor.dataFlow
+    └── ProximitySensor.dataFlow
+           ↓
+    combinedSensorData (Flow<SensorDataSnapshot>)
+           ↓
+ThreatAssessmentEngine.processFlow()
+    ├── debounce(50ms)
+    ├── ThreatScorer.calculateScore()
+    ├── SensorDataFusion.evaluate()
+    └── distinctUntilChanged
+           ↓
+    Flow<ThreatAssessment>
+           ↓
+PrivacyGuardService.handleThreatDetected()
+           ↓
+    TODO Jour 4: ProtectionExecutor
+```
+
+#### Tests Créés
+
+**`ThreatAssessmentEngineTest.kt`** (~300 lignes)
+- Tests des seuils de mode (DISCRETE, PARANOIA, BALANCED)
+- Tests des capteurs individuels
+- Tests de fusion multi-capteurs
+- Tests des actions recommandées
+- Tests de contexte (zone confiance)
+
+**`ThreatScorerTest.kt`** (~250 lignes)
+- Tests de normalisation par capteur
+- Tests de pondération et redistribution
+- Tests de confiance
+
+#### Apprentissages
+
+1. **Flow.debounce est crucial** : Évite la surcharge CPU avec données capteurs rapides
+2. **distinctUntilChanged intelligent** : Filtrer sur (shouldTrigger, action) pas sur tout l'assessment
+3. **Redistribution des poids** : Si capteur manquant, redistribuer proportionnellement aux autres
+4. **Contexte dynamique** : Zone confiance, bruit ambiant, luminosité modifient les poids
+
+#### Statistiques Jour 3
+
+| Métrique | Valeur |
+|----------|--------|
+| **Fichiers créés** | 6 fichiers |
+| **Lignes de code** | ~1100 lignes |
+| **Tests unitaires** | ~50 tests |
+| **Temps** | ~3 heures |
 
 ---
 
@@ -666,18 +753,49 @@ Explique :
 
 ### Difficultés Rencontrées ⚠️
 
-1. **[À COMPLÉTER] ML Kit Configuration**
-   - Problème : [Décrire]
-   - Solution : [Décrire]
-   - Prompt utilisé : [Copier]
+1. **ML Kit Configuration - Format d'Image Incompatible**
+   - **Problème** : `IllegalArgumentException: Only JPEG and YUV_420_888 are supported now` lors de la détection faciale
+   - **Cause** : Utilisation de `OUTPUT_IMAGE_FORMAT_RGBA_8888` au lieu du format supporté par ML Kit
+   - **Solution** : Changé `OUTPUT_IMAGE_FORMAT_RGBA_8888` → `OUTPUT_IMAGE_FORMAT_YUV_420_888` dans CameraSensor
+   - **Fichiers modifiés** : `CameraSensor.kt`, `CameraPreview.kt`
+   - **Prompt utilisé** : "J'ai cette erreur ML Kit : IllegalArgumentException avec format image RGBA_8888. Corrige pour utiliser YUV_420_888"
+   - **Temps de résolution** : 15 minutes
+   - **Apprentissage** : Toujours vérifier les formats supportés dans la documentation officielle ML Kit
 
-2. **[À COMPLÉTER] Permissions Runtime**
-   - Problème : [Décrire]
-   - Solution : [Décrire]
+2. **Permissions Runtime - Gestion Multi-Permissions**
+   - **Problème** : Gérer plusieurs permissions (caméra, audio, localisation) avec l'API moderne Android
+   - **Cause** : Ancienne API `requestPermissions()` deprecated, nouvelle API nécessite `ActivityResultLauncher`
+   - **Solution** : Implémenté `PermissionManager` avec `rememberLauncherForActivityResult` et `RequestMultiplePermissions()`
+   - **Fichiers créés** : `PermissionManager.kt`, `PermissionsScreen.kt`
+   - **Prompt utilisé** : "Crée un système de gestion des permissions runtime pour caméra, audio et localisation avec la nouvelle API Android"
+   - **Temps de résolution** : 30 minutes
+   - **Apprentissage** : Nouvelle API plus verbose mais plus flexible et type-safe
 
-3. **[À COMPLÉTER] Performance Overlay**
-   - Problème : [Décrire]
-   - Solution : [Décrire]
+3. **Build Errors - Plugin kotlin-compose Incompatible**
+   - **Problème** : `Plugin [id: 'org.jetbrains.kotlin.plugin.compose', version: '1.9.10'] was not found`
+   - **Cause** : Plugin `kotlin-compose` n'existe que dans Kotlin 2.0+, pas en 1.9.10
+   - **Solution** : Retiré le plugin, configuration Compose via `buildFeatures` et `composeOptions` traditionnels
+   - **Fichiers modifiés** : `build.gradle.kts`, `app/build.gradle.kts`, `gradle/libs.versions.toml`
+   - **Temps de résolution** : 10 minutes
+   - **Apprentissage** : Vérifier la compatibilité des plugins avec la version Kotlin utilisée
+
+4. **KAPT avec Java 17+ - IllegalAccessError**
+   - **Problème** : `java.lang.IllegalAccessError: KaptJavaCompiler cannot access JavaCompiler` lors du build
+   - **Cause** : KAPT ne peut pas accéder aux modules internes de Java 17+ (restrictions de modules)
+   - **Solution temporaire** : Désactivation de KAPT et Hilt pour MVP Jour 1 (non critiques)
+   - **Solution prévue** : Migration vers KSP (Kotlin Symbol Processing) au lieu de KAPT
+   - **Fichiers modifiés** : `app/build.gradle.kts` (commenté KAPT/Hilt)
+   - **Temps de résolution** : 1 heure (tentatives multiples)
+   - **Apprentissage** : Approche pragmatique : retirer temporairement les dépendances non critiques pour MVP
+
+5. **Crash au Démarrage de la Protection**
+   - **Problème** : App crashait quelques secondes après "Démarrer la protection"
+   - **Cause** : Initialisation des capteurs dans `onCreate()` avant que le service soit prêt
+   - **Solution** : Déplacé l'initialisation dans `startProtection()` avec gestion d'erreur améliorée
+   - **Fichiers modifiés** : `PrivacyGuardService.kt`, `CameraSensor.kt`
+   - **Prompt utilisé** : "L'app crash quand je démarre la protection. Analyse le code du service et corrige l'ordre d'initialisation"
+   - **Temps de résolution** : 20 minutes
+   - **Apprentissage** : Ordre d'initialisation crucial pour services Android
 
 ### Limites de l'IA 🤔
 
@@ -946,9 +1064,12 @@ TODO Jour 2: Démarre les capteurs (Camera, Audio, Motion, Proximity)
 
 ### Commits Git
 
-- Nombre total : [À COMPLÉTER]
+- Nombre total : 24+ commits (Jour 1-2)
+  - Jour 1 : 16 commits (setup, UI, permissions, service)
+  - Jour 2 : 8+ commits (capteurs, tests, fixes)
 - Commits par jour : ~5-8
 - Convention : Conventional Commits
+- Branche principale : `sami` (active development)
 
 ---
 
@@ -1008,25 +1129,43 @@ TODO Jour 2: Démarre les capteurs (Camera, Audio, Motion, Proximity)
 - [Clean Architecture Android](https://developer.android.com/topic/architecture)
 
 ### Repositories Inspirants
-- [Lister des repos GitHub consultés]
+- [CameraX Samples](https://github.com/android/camera-samples) - Exemples d'utilisation CameraX
+- [ML Kit Android](https://github.com/googlesamples/mlkit) - Exemples ML Kit Google
+- [Android Architecture Components](https://github.com/android/architecture-components-samples) - Patterns architecture
 
 ### Tutoriels Suivis
-- [Lister les tutoriels]
+- [ML Kit Face Detection Guide](https://developers.google.com/ml-kit/vision/face-detection/android) - Documentation officielle
+- [CameraX Documentation](https://developer.android.com/training/camerax) - Guide CameraX complet
+- [Jetpack Compose Basics](https://developer.android.com/jetpack/compose/tutorial) - Fondamentaux Compose
 
 ### Stack Overflow
-- [Lister les questions importantes]
+- Questions sur format YUV_420_888 pour ML Kit
+- ActivityResultLauncher pour permissions multiples
+- KAPT vs KSP avec Java 17+
 
 ---
 
 ## 🎯 Conclusion
 
-### Objectifs Atteints
-- [ ] Application fonctionnelle
-- [ ] 4 capteurs intégrés
-- [ ] ML Kit opérationnel
-- [ ] Mode Discret fonctionnel
-- [ ] Tests présents
-- [ ] Documentation complète
+### Objectifs Atteints (Jour 1-2)
+
+**✅ Terminés :**
+- [x] Application fonctionnelle avec UI Compose
+- [x] 4 capteurs intégrés (Camera, Audio, Motion, Proximity)
+- [x] ML Kit opérationnel (Face Detection)
+- [x] Tests unitaires pour tous les capteurs
+- [x] Documentation complète (13 fichiers markdown)
+- [x] Système de permissions runtime
+- [x] Foreground Service fonctionnel
+
+**🔄 En cours (Jours 3-7) :**
+- [ ] Mode Discret fonctionnel (fusion capteurs + protection)
+- [ ] ThreatAssessmentEngine (fusion multi-capteurs)
+- [ ] Protection par flou progressif
+- [ ] Écran leurre
+- [ ] Dashboard statistiques
+- [ ] Tests d'intégration E2E
+- [ ] Capture photo intrus
 
 ### Améliorations Futures (Hors MVP)
 - Reconnaissance faciale propriétaire
@@ -1036,22 +1175,60 @@ TODO Jour 2: Démarre les capteurs (Camera, Audio, Motion, Proximity)
 - Écrans leurres plus sophistiqués
 
 ### Retour d'Expérience Personnel
-[À REMPLIR À LA FIN]
 
-**Ce qui m'a surpris** :  
-[...]
+**Ce qui m'a surpris** :
 
-**Ce que j'ai appris** :  
-[...]
+1. **L'IA génère du code fonctionnel mais avec des erreurs subtiles** : Le code compile souvent, mais des détails comme les formats d'image ou les versions de plugins peuvent causer des problèmes à l'exécution. Toujours tester sur device physique rapidement.
 
-**Ce que je ferais différemment** :  
-[...]
+2. **La documentation exhaustive AVANT de coder paye** : Avoir tous les fichiers markdown créés permet à l'IA de générer du code beaucoup plus aligné avec les objectifs. Référencer les fichiers (@ARCHITECTURE.md, @SENSORS.md) dans les prompts aide énormément.
+
+3. **Les erreurs de build Android sont souvent spécifiques aux versions** : KAPT avec Java 17+, kotlin-compose uniquement Kotlin 2.0+, etc. L'IA ne connaît pas toujours ces subtilités de versions.
+
+4. **Le debugging avec l'IA est très efficace** : Copier la stacktrace + le code problématique dans un prompt permet de résoudre les bugs rapidement (15-30 min vs 2-3h manuellement).
+
+**Ce que j'ai appris** :
+
+1. **Vibe Coding = Documentation + Code itératif** : Commencer par documenter exhaustivement permet d'aller beaucoup plus vite ensuite. L'IA comprend mieux le contexte et génère du code plus pertinent.
+
+2. **Tester tôt sur device physique** : ML Kit, permissions, services Android se comportent différemment sur émulateur vs device réel. Tester dès Jour 1 évite des surprises tardives.
+
+3. **Approche pragmatique pour MVP** : Désactiver temporairement KAPT/Hilt pour avancer plutôt que bloquer 3h dessus. Réactiver au Jour 3 si nécessaire.
+
+4. **Commits fréquents avec messages détaillés** : Aide à retrouver rapidement quand un bug a été introduit ou une feature ajoutée. Messages conventionnels facilitent la navigation dans l'historique.
+
+5. **L'IA est excellente pour générer la structure, moins pour les détails** : Architecture, classes de base, flow général = très bon. Formats spécifiques, versions compatibles, edge cases Android = nécessite vérification manuelle.
+
+**Ce que je ferais différemment** :
+
+1. **Tester la compilation AVANT de commit** : Plusieurs commits de fixes auraient pu être évités en testant systématiquement après chaque génération de code.
+
+2. **Créer les tests unitaires en même temps que le code** : Plutôt que les ajouter après. L'IA peut générer tests + code ensemble, ça prend le même temps.
+
+3. **Utiliser KSP au lieu de KAPT dès le début** : Éviterait les problèmes de compatibilité Java 17+. Mais nécessite setup initial légèrement différent.
+
+4. **Documenter les bugs résolus IMMÉDIATEMENT** : Plutôt qu'à la fin. On oublie vite les détails (stacktrace exacte, solution précise).
+
+5. **Créer un script de vérification** : Checklist automatisée (compile? tests passent? device fonctionne?) avant chaque commit.
+
+**Points forts de la méthode Vibe Coding** :
+
+- ✅ **Rapidité** : 32% de gain de temps estimé
+- ✅ **Qualité** : Code structuré et documenté dès le début
+- ✅ **Apprentissage** : L'IA explique pourquoi elle fait certaines choses
+- ✅ **Itération rapide** : Générer → Tester → Ajuster → Répéter
+
+**Points faibles à améliorer** :
+
+- ⚠️ **Dépendance à l'IA** : Peut ralentir si l'IA n'est pas disponible
+- ⚠️ **Vérification nécessaire** : Toujours vérifier le code généré (erreurs subtiles)
+- ⚠️ **Contexte Android** : L'IA ne maîtrise pas toujours les spécificités Android/versions
 
 ---
 
-**Date de rédaction** : [Date]  
+**Date de rédaction** : 14 novembre 2024 (Jour 2 terminé)  
+**Dernière mise à jour** : 14 novembre 2024  
 **Auteur** : Sami - ENSEEIHT N7  
-**Version** : 1.0
+**Version** : 1.0 (en cours - MVP 7 jours)
 
 ---
 

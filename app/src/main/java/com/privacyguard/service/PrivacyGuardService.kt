@@ -11,8 +11,14 @@ import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.privacyguard.R
+import com.privacyguard.assessment.ThreatAssessmentEngine
+import com.privacyguard.assessment.models.ProtectionAction
+import com.privacyguard.assessment.models.ProtectionMode
 import com.privacyguard.sensors.SensorManager
+import com.privacyguard.sensors.ThreatLevel
 import com.privacyguard.ui.MainActivity
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -82,6 +88,12 @@ class PrivacyGuardService : LifecycleService() {
     // Gestionnaire de capteurs
     private var sensorManager: SensorManager? = null
     
+    // Moteur d'évaluation des menaces
+    private var threatAssessmentEngine: ThreatAssessmentEngine? = null
+    
+    // Job de collecte des données
+    private var assessmentJob: Job? = null
+    
     override fun onCreate() {
         super.onCreate()
         Timber.d("PrivacyGuardService onCreate()")
@@ -123,11 +135,19 @@ class PrivacyGuardService : LifecycleService() {
         isRunning = false
         isPaused = false
         
+        // Arrêter le job d'évaluation
+        assessmentJob?.cancel()
+        assessmentJob = null
+        
         // Arrêter tous les capteurs
         lifecycleScope.launch {
             sensorManager?.stopAll()
             sensorManager?.cleanup()
         }
+        
+        // Nettoyer le moteur d'évaluation
+        threatAssessmentEngine?.cleanup()
+        threatAssessmentEngine = null
         
         // TODO Jour 4: Retirer l'overlay si présent
     }
@@ -160,13 +180,32 @@ class PrivacyGuardService : LifecycleService() {
                 sensorManager?.startAll()
                 Timber.i("All sensors started successfully")
                 
-                // TODO Jour 3: Analyser les données combinées
-                // sensorManager?.combinedSensorData?.collect { snapshot ->
-                //     val (threatLevel, confidence) = snapshot.calculateOverallThreat()
-                //     if (threatLevel >= ThreatLevel.MEDIUM) {
-                //         // Déclencher l'overlay
-                //     }
-                // }
+                // Initialiser le moteur d'évaluation des menaces
+                if (threatAssessmentEngine == null) {
+                    threatAssessmentEngine = ThreatAssessmentEngine().apply {
+                        setProtectionMode(ProtectionMode.DISCRETE) // Mode Discret par défaut (MVP)
+                    }
+                    Timber.i("ThreatAssessmentEngine initialized with DISCRETE mode")
+                }
+                
+                // Collecter et analyser les données des capteurs
+                assessmentJob = launch {
+                    sensorManager?.combinedSensorData?.let { sensorFlow ->
+                        threatAssessmentEngine?.processFlow(sensorFlow)?.collectLatest { assessment ->
+                            // Log de l'évaluation
+                            Timber.d("Assessment: Score=${assessment.threatScore}, " +
+                                    "Level=${assessment.threatLevel}, " +
+                                    "Trigger=${assessment.shouldTriggerProtection}")
+                            
+                            // Si protection doit être déclenchée
+                            if (assessment.shouldTriggerProtection) {
+                                handleThreatDetected(assessment.recommendedAction, assessment.triggerReasons)
+                            }
+                        }
+                    }
+                }
+                Timber.i("Threat assessment pipeline started")
+                
             } catch (e: Exception) {
                 Timber.e(e, "Failed to start sensors: ${e.message}")
                 Timber.e(e, "Stack trace:", e)
@@ -216,7 +255,69 @@ class PrivacyGuardService : LifecycleService() {
             sensorManager?.pauseAll()
         }
         
+        // Annuler le job d'évaluation
+        assessmentJob?.cancel()
+        assessmentJob = null
+        
         Timber.i("Privacy protection paused")
+    }
+    
+    /**
+     * Gère la détection d'une menace
+     * TODO Jour 4: Implémenter les actions de protection réelles
+     */
+    private fun handleThreatDetected(action: ProtectionAction, reasons: List<String>) {
+        Timber.w("⚠️ THREAT DETECTED! Action: $action")
+        Timber.w("⚠️ Reasons: ${reasons.joinToString(", ")}")
+        
+        when (action) {
+            ProtectionAction.NONE -> {
+                // Rien à faire
+            }
+            ProtectionAction.SOFT_BLUR -> {
+                // TODO Jour 4: Activer overlay flou
+                Timber.i("TODO: Activate soft blur overlay")
+            }
+            ProtectionAction.DECOY_SCREEN -> {
+                // TODO Jour 4: Afficher écran leurre
+                Timber.i("TODO: Show decoy screen")
+            }
+            ProtectionAction.INSTANT_LOCK -> {
+                // TODO Jour 4: Verrouillage instantané
+                Timber.i("TODO: Instant lock")
+            }
+            ProtectionAction.PANIC_MODE -> {
+                // TODO Jour 4: Mode panique
+                Timber.i("TODO: Panic mode")
+            }
+        }
+        
+        // Mettre à jour la notification pour indiquer menace détectée
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(NOTIFICATION_ID, createThreatNotification(reasons))
+    }
+    
+    /**
+     * Crée une notification de menace détectée
+     */
+    private fun createThreatNotification(reasons: List<String>): Notification {
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_IMMUTABLE
+        )
+        
+        return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+            .setContentTitle("⚠️ Menace détectée")
+            .setContentText(reasons.firstOrNull() ?: "Protection activée")
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setContentIntent(pendingIntent)
+            .setOngoing(true)
+            .setAutoCancel(false)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .build()
     }
     
     /**

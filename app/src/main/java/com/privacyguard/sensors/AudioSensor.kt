@@ -41,8 +41,10 @@ class AudioSensor(context: Context) : BaseSensor<AudioData>(context, "AudioSenso
     
     override suspend fun onStart() {
         Timber.d("AudioSensor: Starting audio monitoring...")
+        Timber.d("AudioSensor: Buffer size = $bufferSize")
         
         try {
+            Timber.d("AudioSensor: Creating AudioRecord...")
             audioRecord = AudioRecord(
                 MediaRecorder.AudioSource.MIC,
                 sampleRate,
@@ -51,27 +53,52 @@ class AudioSensor(context: Context) : BaseSensor<AudioData>(context, "AudioSenso
                 bufferSize
             )
             
+            Timber.d("AudioSensor: AudioRecord state = ${audioRecord?.state}")
+            
             if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
-                Timber.e("AudioSensor: Failed to initialize AudioRecord")
+                Timber.e("AudioSensor: Failed to initialize AudioRecord - state=${audioRecord?.state}")
+                // Émettre des données par défaut pour ne pas bloquer le système
+                emitDefaultData()
                 return
             }
             
+            Timber.d("AudioSensor: Starting recording...")
             audioRecord?.startRecording()
             isRecording = true
             
+            Timber.d("AudioSensor: Recording state = ${audioRecord?.recordingState}")
+            
             // Démarrer l'analyse audio dans une coroutine
             recordingJob = scope.launch {
+                Timber.i("AudioSensor: Analysis coroutine started")
                 analyzeAudio()
             }
             
-            Timber.i("AudioSensor: Audio monitoring started")
+            Timber.i("AudioSensor: Audio monitoring started successfully")
         } catch (e: SecurityException) {
-            Timber.e(e, "AudioSensor: Permission denied for microphone")
-            throw e
+            Timber.e(e, "AudioSensor: PERMISSION DENIED for microphone!")
+            emitDefaultData()
         } catch (e: Exception) {
-            Timber.e(e, "AudioSensor: Failed to start audio monitoring")
-            throw e
+            Timber.e(e, "AudioSensor: Failed to start audio monitoring: ${e.message}")
+            emitDefaultData()
         }
+    }
+    
+    /**
+     * Émet des données par défaut quand le micro n'est pas disponible
+     */
+    private fun emitDefaultData() {
+        Timber.w("AudioSensor: Emitting default (silent) data")
+        emitData(
+            AudioData(
+                timestamp = System.currentTimeMillis(),
+                threatLevel = ThreatLevel.NONE,
+                confidence = 0.5f,
+                averageDecibels = 30f,
+                peakDecibels = 30f,
+                isSpeechDetected = false
+            )
+        )
     }
     
     override suspend fun onStop() {
@@ -93,12 +120,24 @@ class AudioSensor(context: Context) : BaseSensor<AudioData>(context, "AudioSenso
      */
     private suspend fun analyzeAudio() {
         val buffer = ShortArray(bufferSize / 2)
+        var loopCount = 0
+        
+        Timber.i("AudioSensor: Entering analysis loop - isRecording=$isRecording, isActive=$isActive")
         
         while (isRecording && isActive) {
+            loopCount++
             val timestamp = System.currentTimeMillis()
+            
+            if (loopCount % 10 == 1) {
+                Timber.d("AudioSensor: Analysis loop iteration #$loopCount")
+            }
             
             // Lire les échantillons audio
             val read = audioRecord?.read(buffer, 0, buffer.size) ?: 0
+            
+            if (loopCount % 10 == 1) {
+                Timber.d("AudioSensor: Read $read samples from buffer")
+            }
             
             if (read > 0) {
                 // Calculer l'amplitude RMS (Root Mean Square)

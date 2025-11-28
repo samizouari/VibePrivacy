@@ -55,17 +55,24 @@ class ThreatAssessmentEngine(
      */
     fun processFlow(sensorDataFlow: Flow<SensorDataSnapshot>): Flow<ThreatAssessment> {
         return sensorDataFlow
-            .debounce(50) // Anti-rebond 50ms pour éviter surcharge
+            .debounce(100) // Anti-rebond 100ms pour éviter surcharge
             .mapNotNull { snapshot ->
                 processSnapshot(snapshot)
             }
             .distinctUntilChangedBy { assessment ->
                 // Éviter émissions répétées si pas de changement significatif
-                assessment.shouldTriggerProtection to assessment.recommendedAction
+                // IMPORTANT: Inclure le threatLevel pour mettre à jour l'indicateur
+                Triple(
+                    assessment.threatLevel,
+                    assessment.shouldTriggerProtection,
+                    assessment.threatScore / 10  // Arrondir par 10 pour réduire le bruit
+                )
             }
             .onEach { assessment ->
                 _lastAssessment.value = assessment
                 addToHistory(assessment)
+                
+                Timber.i("ThreatAssessmentEngine: Assessment emitted - Score=${assessment.threatScore}, Level=${assessment.threatLevel}, Trigger=${assessment.shouldTriggerProtection}")
                 
                 if (assessment.shouldTriggerProtection) {
                     Timber.w("ThreatAssessmentEngine: ⚠️ THREAT DETECTED! " +

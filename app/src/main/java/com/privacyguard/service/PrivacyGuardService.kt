@@ -211,12 +211,15 @@ class PrivacyGuardService : LifecycleService() {
                 
                 // Collecter et analyser les données des capteurs
                 assessmentJob = launch {
+                    Timber.i("PrivacyGuardService: Starting assessment collection...")
                     sensorManager?.combinedSensorData?.let { sensorFlow ->
+                        Timber.i("PrivacyGuardService: Got sensor flow, processing...")
                         threatAssessmentEngine?.processFlow(sensorFlow)?.collectLatest { assessment ->
                             // Log de l'évaluation
-                            Timber.d("Assessment: Score=${assessment.threatScore}, " +
+                            Timber.i("PrivacyGuardService: RECEIVED assessment - Score=${assessment.threatScore}, " +
                                     "Level=${assessment.threatLevel}, " +
-                                    "Trigger=${assessment.shouldTriggerProtection}")
+                                    "Camera=${(assessment.sensorContributions.cameraScore * 100).toInt()}%, " +
+                                    "Audio=${(assessment.sensorContributions.audioScore * 100).toInt()}%")
                             
                             // Mettre à jour l'indicateur selon le niveau de menace
                             updateIndicatorFromAssessment(assessment)
@@ -224,7 +227,7 @@ class PrivacyGuardService : LifecycleService() {
                             // Exécuter l'action de protection si nécessaire
                             protectionExecutor?.executeProtection(assessment)
                         }
-                    }
+                    } ?: Timber.e("PrivacyGuardService: combinedSensorData is null!")
                 }
                 Timber.i("Threat assessment pipeline started")
                 

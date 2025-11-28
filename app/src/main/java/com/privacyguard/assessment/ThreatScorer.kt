@@ -76,50 +76,45 @@ class ThreatScorer {
      * - Visages regardant l'écran
      * - Visages inconnus
      * - Distance à la caméra
+     * 
+     * IMPORTANT: Scores augmentés pour menaces réelles
      */
     private fun normalizeCameraData(data: CameraData?): Float {
         if (data == null) return 0f
         
         var score = 0f
         
-        // Facteur 1 : Nombre de visages (0-0.3)
+        // Facteur 1 : Nombre de visages (0-0.4)
         // Plus de visages = plus de risque
         val faceCountScore = when {
             data.facesDetected == 0 -> 0f
             data.facesDetected == 1 -> 0.1f  // Probablement l'utilisateur
-            data.facesDetected == 2 -> 0.2f
-            else -> 0.3f  // 3+ visages = max
+            data.facesDetected == 2 -> 0.35f // 2 personnes = menace significative
+            else -> 0.4f  // 3+ visages = max
         }
         score += faceCountScore
         
-        // Facteur 2 : Visages regardant l'écran (0-0.4)
+        // Facteur 2 : Visages regardant l'écran (0-0.5)
         // Si quelqu'un regarde l'écran, c'est suspect
         val lookingScore = when {
             data.facesLookingAtScreen == 0 -> 0f
             data.facesLookingAtScreen == 1 && data.facesDetected == 1 -> 0.05f  // Probablement utilisateur
-            data.facesLookingAtScreen == 1 -> 0.3f  // Autre personne regarde
-            else -> 0.4f  // Plusieurs regardent
+            data.facesLookingAtScreen == 1 && data.facesDetected >= 2 -> 0.4f  // Autre personne regarde
+            else -> 0.5f  // Plusieurs regardent = menace élevée
         }
         score += lookingScore
         
-        // Facteur 3 : Visages inconnus (0-0.2)
-        val unknownScore = (data.unknownFacesCount.coerceAtMost(3) / 3f) * 0.2f
+        // Facteur 3 : Visages inconnus (0-0.1)
+        val unknownScore = (data.unknownFacesCount.coerceAtMost(3) / 3f) * 0.1f
         score += unknownScore
         
-        // Facteur 4 : Distance (0-0.1)
-        // Plus proche = plus de risque
-        val distanceScore = data.distanceToCamera?.let { distance ->
-            when {
-                distance < 0.3f -> 0.1f   // < 30cm = très proche
-                distance < 0.5f -> 0.07f  // < 50cm
-                distance < 1.0f -> 0.03f  // < 1m
-                else -> 0f
-            }
-        } ?: 0f
-        score += distanceScore
-        
         // Appliquer la confiance du capteur
-        return (score * data.confidence).coerceIn(0f, 1f)
+        val finalScore = (score * data.confidence).coerceIn(0f, 1f)
+        
+        Timber.d("CameraScore: faces=${data.facesDetected}, looking=${data.facesLookingAtScreen}, " +
+                "faceScore=$faceCountScore, lookingScore=$lookingScore, final=$finalScore")
+        
+        return finalScore
     }
     
     /**
@@ -128,39 +123,38 @@ class ThreatScorer {
      * Facteurs considérés :
      * - Niveau de décibels
      * - Détection de parole
+     * 
+     * Note: Les valeurs en dB sont en dBFS normalisé (0-120)
      */
     private fun normalizeAudioData(data: AudioData?): Float {
         if (data == null) return 0f
         
         var score = 0f
         
-        // Facteur 1 : Niveau sonore (0-0.5)
-        // Bruit de fond normal ~40-50dB, conversation ~60-70dB
+        // Facteur 1 : Niveau sonore (0-0.6)
+        // Note: dBFS normalisé, pas dB SPL
+        // Silence ~30-40, parole ~50-70, musique forte ~70-90
         val decibelScore = when {
-            data.averageDecibels < 40f -> 0f        // Très calme
-            data.averageDecibels < 55f -> 0.1f      // Calme
-            data.averageDecibels < 65f -> 0.2f      // Normal
-            data.averageDecibels < 75f -> 0.35f     // Bruyant (conversation proche)
-            else -> 0.5f                            // Très bruyant
+            data.averageDecibels < 35f -> 0f        // Très calme
+            data.averageDecibels < 50f -> 0.15f     // Calme
+            data.averageDecibels < 60f -> 0.3f      // Normal
+            data.averageDecibels < 70f -> 0.45f     // Conversation/musique
+            else -> 0.6f                            // Très bruyant
         }
         score += decibelScore
         
-        // Facteur 2 : Pic de volume (0-0.2)
-        // Pics soudains peuvent indiquer quelqu'un qui parle/s'approche
-        val peakScore = when {
-            data.peakDecibels < 60f -> 0f
-            data.peakDecibels < 80f -> 0.1f
-            else -> 0.2f
-        }
-        score += peakScore
-        
-        // Facteur 3 : Parole détectée (0-0.3)
+        // Facteur 2 : Parole détectée (0-0.4)
         if (data.isSpeechDetected) {
-            score += 0.3f
+            score += 0.4f
         }
         
         // Appliquer la confiance du capteur
-        return (score * data.confidence).coerceIn(0f, 1f)
+        val finalScore = (score * data.confidence).coerceIn(0f, 1f)
+        
+        Timber.d("AudioScore: dB=${data.averageDecibels.toInt()}, speech=${data.isSpeechDetected}, " +
+                "dbScore=$decibelScore, final=$finalScore")
+        
+        return finalScore
     }
     
     /**

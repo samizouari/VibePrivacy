@@ -272,15 +272,28 @@ class PrivacyGuardService : LifecycleService() {
     
     /**
      * Met à jour l'indicateur selon l'évaluation
+     * 
+     * Utilise une logique hybride :
+     * - Score global pour les niveaux intermédiaires
+     * - ThreatLevel HIGH/CRITICAL d'un capteur pour forcer le rouge
      */
     private fun updateIndicatorFromAssessment(assessment: ThreatAssessment) {
+        // Vérifier si un capteur individuel a une menace HIGH ou CRITICAL
+        val hasHighThreat = assessment.sensorContributions.let { contrib ->
+            // Si le score d'un capteur est > 60%, c'est une menace significative
+            contrib.cameraScore > 0.6f || contrib.audioScore > 0.6f
+        }
+        
         val state = when {
+            // Rouge si protection déclenchée OU menace haute sur un capteur
             assessment.shouldTriggerProtection -> IndicatorState.THREAT
-            assessment.threatScore >= 50 -> IndicatorState.MONITORING  // Seuil relevé de 30 à 50
+            hasHighThreat -> IndicatorState.THREAT
+            assessment.threatScore >= 40 -> IndicatorState.MONITORING  // Seuil baissé à 40
             else -> IndicatorState.SAFE
         }
+        
         protectionExecutor?.updateIndicatorState(state)
-        Timber.v("Indicator state: $state (score=${assessment.threatScore})")
+        Timber.i("Indicator: $state | Score=${assessment.threatScore} | Camera=${(assessment.sensorContributions.cameraScore * 100).toInt()}% | Audio=${(assessment.sensorContributions.audioScore * 100).toInt()}%")
     }
     
     /**

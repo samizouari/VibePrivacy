@@ -276,10 +276,11 @@ class PrivacyGuardService : LifecycleService() {
     private fun updateIndicatorFromAssessment(assessment: ThreatAssessment) {
         val state = when {
             assessment.shouldTriggerProtection -> IndicatorState.THREAT
-            assessment.threatScore > 30 -> IndicatorState.MONITORING
+            assessment.threatScore >= 50 -> IndicatorState.MONITORING  // Seuil relevé de 30 à 50
             else -> IndicatorState.SAFE
         }
         protectionExecutor?.updateIndicatorState(state)
+        Timber.v("Indicator state: $state (score=${assessment.threatScore})")
     }
     
     /**

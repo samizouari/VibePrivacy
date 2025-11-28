@@ -179,6 +179,67 @@ fun MainScreen() {
             )
         }
         
+        // Boutons de test overlay (seulement si protection active et permission accordée)
+        if (isProtectionEnabled && hasOverlayPermission) {
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Variable pour stocker le test overlay manager
+            var testOverlayManager by remember { mutableStateOf<com.privacyguard.protection.OverlayManager?>(null) }
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Test flou
+                OutlinedButton(
+                    onClick = {
+                        // Nettoyer l'ancien si existant
+                        testOverlayManager?.cleanup()
+                        
+                        // Créer un nouveau OverlayManager pour tester
+                        testOverlayManager = com.privacyguard.protection.OverlayManager(context).apply {
+                            onOverlayDismissed = {
+                                Timber.d("Test overlay dismissed")
+                                cleanup()
+                                testOverlayManager = null
+                            }
+                            showBlurOverlay(0.8f, listOf("Test: Double-tap pour fermer"))
+                        }
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("🔵 Test Flou", style = MaterialTheme.typography.bodySmall)
+                }
+                
+                // Test écran leurre
+                OutlinedButton(
+                    onClick = {
+                        // Nettoyer l'ancien si existant
+                        testOverlayManager?.cleanup()
+                        
+                        testOverlayManager = com.privacyguard.protection.OverlayManager(context).apply {
+                            onOverlayDismissed = {
+                                Timber.d("Test overlay dismissed")
+                                cleanup()
+                                testOverlayManager = null
+                            }
+                            showDecoyScreen()
+                        }
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("📱 Test Leurre", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            
+            Text(
+                text = "💡 Flou: double-tap | Leurre: 5 taps coin ↗",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+        
         Spacer(modifier = Modifier.height(16.dp))
         
         // Version et statut

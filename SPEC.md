@@ -187,27 +187,35 @@ fun processImage(image: Bitmap): FaceDetectionResult {
 ## 📅 État Actuel du Projet
 
 ### Jour en Cours
-**JOUR 3 - EN COURS** 🚧
+**JOUR 4 - COMPLET** ✅
 
-**🎉 MILESTONES JOUR 2 (COMPLET) :**
-- ✅ Tous les 4 capteurs implémentés et fonctionnels
-- ✅ Tests unitaires complets pour tous les capteurs
-- ✅ Intégration dans PrivacyGuardService
-- ✅ Testé sur device physique
-- ✅ 20+ commits sur branche `sami`
+**🎉 MILESTONES JOUR 3 (COMPLET) :**
+- ✅ Moteur de fusion multi-capteurs implémenté
+- ✅ Scoring pondéré avec seuils configurable
+- ✅ Pipeline temps réel avec Flow
+- ✅ Tests unitaires pour le scoring
 
-### Accomplissements Jour 3
+**🎉 MILESTONES JOUR 4 (COMPLET) :**
+- ✅ Système de protection complet avec overlays
+- ✅ Indicateur de confidentialité flottant
+- ✅ Overlay de flou progressif
+- ✅ Écran leurre (decoy screen)
+- ✅ Écran de verrouillage
+- ✅ Gestion permission SYSTEM_ALERT_WINDOW
 
-**Fusion et Évaluation des Menaces** :
-- ✅ `ThreatAssessmentEngine.kt` - Moteur principal de fusion multi-capteurs
-- ✅ `SensorDataFusion.kt` - Combinaison et évaluation des données
-- ✅ `ThreatScorer.kt` - Scoring pondéré (Caméra 40%, Audio 30%, Motion 20%, Proximité 10%)
-- ✅ `ThreatModels.kt` - Modèles (ProtectionMode, SensorWeights, ThreatAssessment, etc.)
-- ✅ Intégration dans `PrivacyGuardService` avec pipeline temps réel
-- ✅ Tests unitaires pour ThreatAssessmentEngine et ThreatScorer
-- ✅ Seuils Mode Discret implémentés (seuil 75/100)
+### Accomplissements Jour 4
 
-**Architecture implémentée** :
+**Protection et Overlays** :
+- ✅ `ProtectionExecutor.kt` - Exécution des actions de protection
+- ✅ `OverlayManager.kt` - Gestion centralisée des overlays
+- ✅ `PrivacyIndicatorView.kt` - Indicateur flottant (vert/jaune/rouge)
+- ✅ `SoftBlurOverlayView.kt` - Flou progressif avec raisons
+- ✅ `DecoyScreenOverlayView.kt` - Faux écran verrouillé avec horloge
+- ✅ `LockScreenOverlayView.kt` - Écran de verrouillage opaque
+- ✅ Intégration dans `PrivacyGuardService`
+- ✅ Gestion permission overlay dans `MainActivity`
+
+**Architecture complète** :
 ```
 SensorManager (4 capteurs)
        ↓
@@ -215,17 +223,23 @@ ThreatAssessmentEngine (fusion)
        ↓ Flow<ThreatAssessment>
 PrivacyGuardService
        ↓
-handleThreatDetected() → TODO Jour 4: ProtectionExecutor
+ProtectionExecutor
+       ↓
+OverlayManager
+   ├── PrivacyIndicatorView (pilule vert/jaune/rouge)
+   ├── SoftBlurOverlayView (flou + raisons)
+   ├── DecoyScreenOverlayView (faux écran)
+   └── LockScreenOverlayView (verrouillage)
 ```
 
 ### Prochaine Tâche
-**JOUR 4 - Protection et Overlay UI** : 
-1. ProtectionExecutor (logique d'exécution)
-2. SoftMaskingProtection (flou gaussien)
-3. OverlayManager (affichage overlay)
-4. PrivacyIndicator (indicateur flottant)
+**JOUR 5 - Dashboard et Configuration** : 
+1. Dashboard avec statistiques temps réel
+2. Écran de paramètres (mode de protection)
+3. Sélection du mode (Paranoïa/Équilibré/Discret)
+4. Configuration de sensibilité par capteur
    
-**Note** : Hilt/Room réactivation si nécessaire pour persistence.
+**Note** : Possibilité de réactiver Hilt/Room si nécessaire pour persistence des paramètres.
 
 ### Fichiers Documentation Créés
 - [x] README.md

@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
@@ -14,6 +15,10 @@ import com.privacyguard.R
 import com.privacyguard.assessment.ThreatAssessmentEngine
 import com.privacyguard.assessment.models.ProtectionAction
 import com.privacyguard.assessment.models.ProtectionMode
+import com.privacyguard.assessment.models.ThreatAssessment
+import com.privacyguard.protection.IndicatorState
+import com.privacyguard.protection.OverlayManager
+import com.privacyguard.protection.ProtectionExecutor
 import com.privacyguard.sensors.SensorManager
 import com.privacyguard.sensors.ThreatLevel
 import com.privacyguard.ui.MainActivity
@@ -94,6 +99,12 @@ class PrivacyGuardService : LifecycleService() {
     // Job de collecte des données
     private var assessmentJob: Job? = null
     
+    // Gestionnaire d'overlays
+    private var overlayManager: OverlayManager? = null
+    
+    // Exécuteur de protection
+    private var protectionExecutor: ProtectionExecutor? = null
+    
     override fun onCreate() {
         super.onCreate()
         Timber.d("PrivacyGuardService onCreate()")
@@ -149,7 +160,14 @@ class PrivacyGuardService : LifecycleService() {
         threatAssessmentEngine?.cleanup()
         threatAssessmentEngine = null
         
-        // TODO Jour 4: Retirer l'overlay si présent
+        // Nettoyer le système de protection
+        protectionExecutor?.cleanup()
+        protectionExecutor = null
+        
+        overlayManager?.cleanup()
+        overlayManager = null
+        
+        Timber.i("PrivacyGuardService: All resources cleaned up")
     }
     
     /**
@@ -164,7 +182,7 @@ class PrivacyGuardService : LifecycleService() {
         isRunning = true
         isPaused = false
         
-        // Initialiser et démarrer tous les capteurs
+        // Initialiser et démarrer tous les capteurs et la protection
         lifecycleScope.launch {
             try {
                 // Initialiser le SensorManager si pas déjà fait
@@ -188,6 +206,9 @@ class PrivacyGuardService : LifecycleService() {
                     Timber.i("ThreatAssessmentEngine initialized with DISCRETE mode")
                 }
                 
+                // Initialiser l'OverlayManager et le ProtectionExecutor si permission accordée
+                initializeProtectionSystem()
+                
                 // Collecter et analyser les données des capteurs
                 assessmentJob = launch {
                     sensorManager?.combinedSensorData?.let { sensorFlow ->
@@ -197,10 +218,11 @@ class PrivacyGuardService : LifecycleService() {
                                     "Level=${assessment.threatLevel}, " +
                                     "Trigger=${assessment.shouldTriggerProtection}")
                             
-                            // Si protection doit être déclenchée
-                            if (assessment.shouldTriggerProtection) {
-                                handleThreatDetected(assessment.recommendedAction, assessment.triggerReasons)
-                            }
+                            // Mettre à jour l'indicateur selon le niveau de menace
+                            updateIndicatorFromAssessment(assessment)
+                            
+                            // Exécuter l'action de protection si nécessaire
+                            protectionExecutor?.executeProtection(assessment)
                         }
                     }
                 }
@@ -214,6 +236,50 @@ class PrivacyGuardService : LifecycleService() {
         }
         
         Timber.i("Privacy protection started successfully")
+    }
+    
+    /**
+     * Initialise le système de protection (overlays)
+     */
+    private fun initializeProtectionSystem() {
+        // Vérifier la permission d'overlay
+        if (!Settings.canDrawOverlays(this)) {
+            Timber.w("PrivacyGuardService: No overlay permission - protection will be limited to notifications")
+            return
+        }
+        
+        // Initialiser l'OverlayManager
+        if (overlayManager == null) {
+            overlayManager = OverlayManager(this).apply {
+                onOverlayDismissed = {
+                    Timber.i("PrivacyGuardService: Overlay dismissed by user")
+                    protectionExecutor?.forceDeactivate()
+                }
+            }
+            Timber.i("PrivacyGuardService: OverlayManager initialized")
+        }
+        
+        // Initialiser le ProtectionExecutor
+        if (protectionExecutor == null && overlayManager != null) {
+            protectionExecutor = ProtectionExecutor(this, overlayManager!!)
+            Timber.i("PrivacyGuardService: ProtectionExecutor initialized")
+        }
+        
+        // Afficher l'indicateur de confidentialité
+        overlayManager?.initializeIndicator()
+        Timber.i("PrivacyGuardService: Privacy indicator shown")
+    }
+    
+    /**
+     * Met à jour l'indicateur selon l'évaluation
+     */
+    private fun updateIndicatorFromAssessment(assessment: ThreatAssessment) {
+        val state = when {
+            assessment.shouldTriggerProtection -> IndicatorState.THREAT
+            assessment.threatScore > 30 -> IndicatorState.MONITORING
+            else -> IndicatorState.SAFE
+        }
+        protectionExecutor?.updateIndicatorState(state)
     }
     
     /**
@@ -263,38 +329,10 @@ class PrivacyGuardService : LifecycleService() {
     }
     
     /**
-     * Gère la détection d'une menace
-     * TODO Jour 4: Implémenter les actions de protection réelles
+     * Vérifie si la permission d'overlay est accordée
      */
-    private fun handleThreatDetected(action: ProtectionAction, reasons: List<String>) {
-        Timber.w("⚠️ THREAT DETECTED! Action: $action")
-        Timber.w("⚠️ Reasons: ${reasons.joinToString(", ")}")
-        
-        when (action) {
-            ProtectionAction.NONE -> {
-                // Rien à faire
-            }
-            ProtectionAction.SOFT_BLUR -> {
-                // TODO Jour 4: Activer overlay flou
-                Timber.i("TODO: Activate soft blur overlay")
-            }
-            ProtectionAction.DECOY_SCREEN -> {
-                // TODO Jour 4: Afficher écran leurre
-                Timber.i("TODO: Show decoy screen")
-            }
-            ProtectionAction.INSTANT_LOCK -> {
-                // TODO Jour 4: Verrouillage instantané
-                Timber.i("TODO: Instant lock")
-            }
-            ProtectionAction.PANIC_MODE -> {
-                // TODO Jour 4: Mode panique
-                Timber.i("TODO: Panic mode")
-            }
-        }
-        
-        // Mettre à jour la notification pour indiquer menace détectée
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.notify(NOTIFICATION_ID, createThreatNotification(reasons))
+    fun hasOverlayPermission(): Boolean {
+        return Settings.canDrawOverlays(this)
     }
     
     /**

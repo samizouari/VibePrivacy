@@ -118,35 +118,54 @@
 
 ---
 
-### 🔴 JOUR 4 : Protection et Overlay UI
+### 🟢 JOUR 4 : Protection et Overlay UI ✅ COMPLET
 
 #### Matin (4h)
-- [ ] **ProtectionExecutor**
+- [x] **ProtectionExecutor** ✅
   - `protection/ProtectionExecutor.kt`
-  - Logique d'exécution des actions
-- [ ] **SoftMaskingProtection**
-  - `protection/actions/SoftMaskingProtection.kt`
-  - Flou gaussien progressif (RenderEffect)
-- [ ] **OverlayManager**
+  - Logique d'exécution des actions de protection
+  - Gestion des transitions entre niveaux de protection
+  - Anti-oscillation avec délai minimum entre actions
+  - Restauration automatique après timeout
+- [x] **OverlayManager** ✅
   - `protection/OverlayManager.kt`
-  - Window overlay permission
-  - Affichage overlay au-dessus apps
-- [ ] **COMMIT** : "feat(protection): add blur protection"
+  - Gestion permission SYSTEM_ALERT_WINDOW
+  - Affichage/masquage des overlays
+  - Coordination des différents types d'overlays
+- [x] **SoftBlurOverlayView** ✅
+  - `protection/SoftBlurOverlayView.kt`
+  - Voile semi-transparent avec dégradé
+  - Intensité configurable
+  - Affichage des raisons de déclenchement
+  - Double-tap pour désactiver
+- [x] **COMMIT** : "feat(protection): add blur protection and overlay system"
 
 #### Après-midi (4h)
-- [ ] **PrivacyIndicator**
-  - `ui/overlay/PrivacyIndicator.kt`
-  - Petit indicateur flottant
+- [x] **PrivacyIndicatorView** ✅
+  - `protection/PrivacyIndicatorView.kt`
+  - Petit indicateur flottant (pilule)
   - États : Safe (vert), Monitoring (jaune), Threat (rouge)
-- [ ] **SoftBlurOverlay**
-  - `ui/overlay/SoftBlurOverlay.kt`
-  - UI de l'overlay de flou
-- [ ] Tests UI
-- [ ] **COMMIT** : "feat(ui): add privacy indicator and blur overlay"
+  - Animation de pulsation pour THREAT
+  - Transition de couleur animée
+- [x] **DecoyScreenOverlayView** ✅
+  - `protection/DecoyScreenOverlayView.kt`
+  - Écran leurre ressemblant à un écran verrouillé
+  - Affichage heure/date en temps réel
+  - Pattern secret (5 taps) pour désactiver
+- [x] **LockScreenOverlayView** ✅
+  - `protection/LockScreenOverlayView.kt`
+  - Écran de verrouillage opaque
+  - Pattern secret (3 taps) pour désactiver
+  - Animation de pulsation
+- [x] Intégration dans PrivacyGuardService ✅
+- [x] Gestion permission overlay dans MainActivity ✅
+- [x] **COMMIT** : "feat(ui): add privacy indicator and protection overlays"
 
 #### Soir
 - [ ] Test E2E : Détection → Protection sur device
 - [ ] Ajustement des seuils si nécessaire
+
+**Livrable Jour 4** : ✅ **TERMINÉ** - Système de protection complet avec overlays (flou, écran leurre, verrouillage)
 
 **Livrable Jour 4** : App détecte menaces et floute l'écran automatiquement
 

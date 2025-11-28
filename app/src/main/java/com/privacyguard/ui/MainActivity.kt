@@ -1,6 +1,9 @@
 package com.privacyguard.ui
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -55,10 +58,13 @@ fun MainScreen() {
     val context = LocalContext.current
     var showPermissionsScreen by remember { mutableStateOf(false) }
     var isProtectionEnabled by remember { mutableStateOf(false) }
+    var hasOverlayPermission by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
+    var showOverlayDialog by remember { mutableStateOf(false) }
     
     // Vérifier les permissions au démarrage
     LaunchedEffect(Unit) {
         showPermissionsScreen = !com.privacyguard.utils.PermissionManager.areCriticalPermissionsGranted(context)
+        hasOverlayPermission = Settings.canDrawOverlays(context)
     }
     
     // Afficher l'écran de permissions si nécessaire
@@ -66,9 +72,46 @@ fun MainScreen() {
         PermissionsScreen(
             onPermissionsGranted = {
                 showPermissionsScreen = false
+                hasOverlayPermission = Settings.canDrawOverlays(context)
             }
         )
         return
+    }
+    
+    // Dialog pour demander la permission overlay
+    if (showOverlayDialog) {
+        AlertDialog(
+            onDismissRequest = { showOverlayDialog = false },
+            title = { Text("Permission requise") },
+            text = { 
+                Text("Pour afficher les overlays de protection (flou, écran leurre), " +
+                     "Privacy Guard a besoin de la permission d'affichage par-dessus les autres applications.\n\n" +
+                     "Sans cette permission, la protection sera limitée aux notifications.")
+            },
+            confirmButton = {
+                Button(onClick = {
+                    showOverlayDialog = false
+                    // Ouvrir les paramètres de permission overlay
+                    val intent = Intent(
+                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:${context.packageName}")
+                    )
+                    context.startActivity(intent)
+                }) {
+                    Text("Autoriser")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { 
+                    showOverlayDialog = false
+                    // Démarrer quand même le service sans overlay
+                    isProtectionEnabled = true
+                    com.privacyguard.service.PrivacyGuardService.startService(context)
+                }) {
+                    Text("Plus tard")
+                }
+            }
+        )
     }
     
     Column(
@@ -104,13 +147,21 @@ fun MainScreen() {
         // Bouton principal
         Button(
             onClick = { 
-                isProtectionEnabled = !isProtectionEnabled
-                
-                // Démarrer ou arrêter le service
                 if (isProtectionEnabled) {
-                    com.privacyguard.service.PrivacyGuardService.startService(context)
-                } else {
+                    // Arrêter la protection
+                    isProtectionEnabled = false
                     com.privacyguard.service.PrivacyGuardService.stopService(context)
+                } else {
+                    // Vérifier la permission overlay avant de démarrer
+                    hasOverlayPermission = Settings.canDrawOverlays(context)
+                    if (!hasOverlayPermission) {
+                        // Afficher le dialog pour demander la permission
+                        showOverlayDialog = true
+                    } else {
+                        // Démarrer la protection avec overlay
+                        isProtectionEnabled = true
+                        com.privacyguard.service.PrivacyGuardService.startService(context)
+                    }
                 }
             },
             modifier = Modifier.fillMaxWidth(),
@@ -172,6 +223,20 @@ fun MainScreen() {
                         text = "✅ Capteurs actifs : Caméra, Audio, Mouvement, Proximité",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = if (hasOverlayPermission) {
+                            "🖼️ Overlays : Activés (flou, écran leurre)"
+                        } else {
+                            "⚠️ Overlays : Désactivés (protection par notification)"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (hasOverlayPermission) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        }
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(

@@ -1,5 +1,6 @@
 package com.privacyguard.ui
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -24,9 +25,21 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.privacyguard.R
+import com.privacyguard.assessment.models.ProtectionMode
+import com.privacyguard.ui.screens.DashboardScreen
+import com.privacyguard.ui.screens.SettingsScreen
 import com.privacyguard.ui.theme.PrivacyGuardTheme
 import timber.log.Timber
 // import dagger.hilt.android.AndroidEntryPoint // TODO: Réactiver au Jour 2
+
+/**
+ * Écrans de l'application
+ */
+enum class Screen {
+    HOME,
+    SETTINGS,
+    DASHBOARD
+}
 
 /**
  * Activité principale de Privacy Guard
@@ -60,6 +73,14 @@ fun MainScreen() {
     var isProtectionEnabled by remember { mutableStateOf(false) }
     var hasOverlayPermission by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
     var showOverlayDialog by remember { mutableStateOf(false) }
+    var currentScreen by remember { mutableStateOf(Screen.HOME) }
+    
+    // Charger le mode depuis les préférences
+    val prefs = remember { context.getSharedPreferences("privacy_guard_prefs", Context.MODE_PRIVATE) }
+    var currentMode by remember {
+        val savedMode = prefs.getString("protection_mode", ProtectionMode.DISCRETE.name)
+        mutableStateOf(ProtectionMode.valueOf(savedMode ?: ProtectionMode.DISCRETE.name))
+    }
     
     // Vérifier les permissions au démarrage
     LaunchedEffect(Unit) {
@@ -76,6 +97,28 @@ fun MainScreen() {
             }
         )
         return
+    }
+    
+    // Navigation entre écrans
+    when (currentScreen) {
+        Screen.SETTINGS -> {
+            SettingsScreen(
+                onBackClick = { currentScreen = Screen.HOME },
+                onModeChanged = { mode ->
+                    currentMode = mode
+                    Timber.i("Mode changed to: ${mode.name}")
+                }
+            )
+            return
+        }
+        Screen.DASHBOARD -> {
+            DashboardScreen(
+                onBackClick = { currentScreen = Screen.HOME },
+                isProtectionActive = isProtectionEnabled
+            )
+            return
+        }
+        Screen.HOME -> { /* Continue below */ }
     }
     
     // Dialog pour demander la permission overlay
@@ -240,6 +283,30 @@ fun MainScreen() {
             )
         }
         
+        // Boutons de navigation
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Bouton Paramètres
+            OutlinedButton(
+                onClick = { currentScreen = Screen.SETTINGS },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("⚙️ Paramètres")
+            }
+            
+            // Bouton Dashboard
+            OutlinedButton(
+                onClick = { currentScreen = Screen.DASHBOARD },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("📊 Dashboard")
+            }
+        }
+        
         Spacer(modifier = Modifier.height(16.dp))
         
         // Version et statut
@@ -275,7 +342,7 @@ fun MainScreen() {
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Mode : Discret (MVP)",
+                    text = "Mode : ${currentMode.name} (seuil ${currentMode.threshold}%)",
                     style = MaterialTheme.typography.bodySmall
                 )
                 if (isProtectionEnabled) {

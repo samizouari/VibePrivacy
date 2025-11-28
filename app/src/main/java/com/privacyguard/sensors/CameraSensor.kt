@@ -125,8 +125,13 @@ class CameraSensor(
             return
         }
         
+        Timber.i("CameraSensor: Binding camera use cases...")
+        
         // Caméra frontale pour détecter les personnes regardant l'écran
         val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
+        
+        // Compteur de frames pour debug
+        var frameCount = 0
         
         // ImageAnalysis pour ML Kit
         imageAnalysis = ImageAnalysis.Builder()
@@ -135,6 +140,10 @@ class CameraSensor(
             .build()
             .also { analysis ->
                 analysis.setAnalyzer(cameraExecutor) { imageProxy ->
+                    frameCount++
+                    if (frameCount % 10 == 1) {
+                        Timber.d("CameraSensor: Frame #$frameCount received from camera")
+                    }
                     processImageProxy(imageProxy)
                 }
             }
@@ -150,10 +159,10 @@ class CameraSensor(
                 imageAnalysis
             )
             
-            Timber.i("CameraSensor: Camera bound successfully")
-            Timber.d("CameraSensor: ImageAnalysis analyzer set, waiting for frames...")
+            Timber.i("CameraSensor: Camera bound successfully to lifecycle")
+            Timber.i("CameraSensor: Waiting for frames from front camera...")
         } catch (e: Exception) {
-            Timber.e(e, "CameraSensor: Failed to bind camera use cases")
+            Timber.e(e, "CameraSensor: Failed to bind camera use cases: ${e.message}")
         }
     }
     
@@ -179,29 +188,29 @@ class CameraSensor(
             return
         }
         
-        Timber.v("CameraSensor: Processing frame ${imageProxy.width}x${imageProxy.height}, rotation=${imageProxy.imageInfo.rotationDegrees}")
+        Timber.d("CameraSensor: Processing frame ${imageProxy.width}x${imageProxy.height}")
         
         val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
         
         // Détection de visages avec ML Kit
         faceDetector.process(image)
             .addOnSuccessListener { faces ->
-                Timber.d("CameraSensor: ML Kit returned ${faces.size} face(s)")
+                Timber.i("CameraSensor: ML Kit SUCCESS - ${faces.size} face(s) detected")
                 handleFaceDetection(faces, currentTime)
             }
             .addOnFailureListener { e ->
-                Timber.e(e, "CameraSensor: Face detection failed")
-                // Émettre des données vides en cas d'erreur
-                emitData(
-                    CameraData(
-                        timestamp = currentTime,
-                        threatLevel = ThreatLevel.NONE,
-                        confidence = 0f,
-                        facesDetected = 0,
-                        facesLookingAtScreen = 0,
-                        unknownFacesCount = 0
-                    )
+                Timber.e(e, "CameraSensor: ML Kit FAILED - ${e.message}")
+                // Émettre des données même en cas d'erreur pour que camera != null
+                val errorData = CameraData(
+                    timestamp = currentTime,
+                    threatLevel = ThreatLevel.NONE,
+                    confidence = 0f,
+                    facesDetected = 0,
+                    facesLookingAtScreen = 0,
+                    unknownFacesCount = 0
                 )
+                Timber.d("CameraSensor: Emitting error fallback data")
+                emitData(errorData)
             }
             .addOnCompleteListener {
                 imageProxy.close()

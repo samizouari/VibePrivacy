@@ -111,16 +111,17 @@ class AudioSensor(context: Context) : BaseSensor<AudioData>(context, "AudioSenso
                 val (threatLevel, confidence) = evaluateThreatLevel(decibels)
                 
                 // Émettre les données
-                emitData(
-                    AudioData(
-                        timestamp = timestamp,
-                        threatLevel = threatLevel,
-                        confidence = confidence,
-                        averageDecibels = decibels,
-                        peakDecibels = decibels, // Simplifié pour MVP
-                        isSpeechDetected = decibels > normalConversationDb
-                    )
+                val audioDataToEmit = AudioData(
+                    timestamp = timestamp,
+                    threatLevel = threatLevel,
+                    confidence = confidence,
+                    averageDecibels = decibels,
+                    peakDecibels = decibels, // Simplifié pour MVP
+                    isSpeechDetected = decibels > normalConversationDb
                 )
+                
+                Timber.i("AudioSensor: EMITTING data - dB=${decibels.toInt()}, speech=${audioDataToEmit.isSpeechDetected}, threat=$threatLevel")
+                emitData(audioDataToEmit)
                 
                 Timber.v("AudioSensor: Level=${decibels.toInt()}dB, threat=$threatLevel")
             }

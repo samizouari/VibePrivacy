@@ -32,6 +32,11 @@ class ThreatScorer {
         proximityData: ProximityData?,
         weights: SensorWeights = SensorWeights.DEFAULT
     ): SensorContributions {
+        // Debug: log des données reçues
+        Timber.d("ThreatScorer INPUT: camera=${cameraData != null} (faces=${cameraData?.facesDetected}), " +
+                "audio=${audioData != null} (dB=${audioData?.averageDecibels?.toInt()}), " +
+                "motion=${motionData != null}, proximity=${proximityData != null}")
+        
         // Normaliser chaque capteur (0-1)
         val cameraScore = normalizeCameraData(cameraData)
         val audioScore = normalizeAudioData(audioData)

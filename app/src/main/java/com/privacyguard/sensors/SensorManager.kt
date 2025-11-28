@@ -51,6 +51,9 @@ class SensorManager(
         _motionData,
         _proximityData
     ) { camera, audio, motion, proximity ->
+        // Log pour debug
+        Timber.v("SensorManager combine: camera=${camera != null}, audio=${audio != null}, motion=${motion != null}, proximity=${proximity != null}")
+        
         SensorDataSnapshot(
             timestamp = System.currentTimeMillis(),
             cameraData = camera,
@@ -164,28 +167,44 @@ class SensorManager(
     
     private suspend fun startCameraSensor() {
         try {
+            Timber.d("SensorManager: Starting CameraSensor...")
             cameraSensor.start()
+            Timber.i("SensorManager: CameraSensor started, starting data collection...")
             // Collecter les données
             scope.launch {
-                cameraSensor.dataFlow.collect { data ->
-                    _cameraData.value = data
+                try {
+                    cameraSensor.dataFlow.collect { data ->
+                        _cameraData.value = data
+                        Timber.d("SensorManager: Camera data received - faces=${data.facesDetected}, looking=${data.facesLookingAtScreen}, threat=${data.threatLevel}")
+                    }
+                } catch (e: Exception) {
+                    Timber.e(e, "SensorManager: Camera data collection failed")
                 }
             }
+            Timber.i("SensorManager: CameraSensor data collection started")
         } catch (e: Exception) {
-            Timber.e(e, "SensorManager: Failed to start camera sensor")
+            Timber.e(e, "SensorManager: Failed to start camera sensor: ${e.message}")
         }
     }
     
     private suspend fun startAudioSensor() {
         try {
+            Timber.d("SensorManager: Starting AudioSensor...")
             audioSensor.start()
+            Timber.i("SensorManager: AudioSensor started, starting data collection...")
             scope.launch {
-                audioSensor.dataFlow.collect { data ->
-                    _audioData.value = data
+                try {
+                    audioSensor.dataFlow.collect { data ->
+                        _audioData.value = data
+                        Timber.d("SensorManager: Audio data received - dB=${data.averageDecibels.toInt()}, speech=${data.isSpeechDetected}, threat=${data.threatLevel}")
+                    }
+                } catch (e: Exception) {
+                    Timber.e(e, "SensorManager: Audio data collection failed")
                 }
             }
+            Timber.i("SensorManager: AudioSensor data collection started")
         } catch (e: Exception) {
-            Timber.e(e, "SensorManager: Failed to start audio sensor")
+            Timber.e(e, "SensorManager: Failed to start audio sensor: ${e.message}")
         }
     }
     

@@ -261,17 +261,18 @@ class CameraSensor(
         )
         
         // Émettre les données
-        emitData(
-            CameraData(
-                timestamp = timestamp,
-                threatLevel = threatLevel,
-                confidence = confidence,
-                facesDetected = facesCount,
-                facesLookingAtScreen = facesLookingAtScreen,
-                unknownFacesCount = facesCount, // Pour MVP, tous les visages sont "inconnus"
-                distanceToCamera = null // Sera calculé plus tard avec reconnaissance faciale
-            )
+        val cameraDataToEmit = CameraData(
+            timestamp = timestamp,
+            threatLevel = threatLevel,
+            confidence = confidence,
+            facesDetected = facesCount,
+            facesLookingAtScreen = facesLookingAtScreen,
+            unknownFacesCount = facesCount, // Pour MVP, tous les visages sont "inconnus"
+            distanceToCamera = null // Sera calculé plus tard avec reconnaissance faciale
         )
+        
+        Timber.i("CameraSensor: EMITTING data - faces=$facesCount, looking=$facesLookingAtScreen, threat=$threatLevel")
+        emitData(cameraDataToEmit)
         
         Timber.d(
             "CameraSensor: Detected $facesCount face(s), " +

@@ -1,6 +1,11 @@
 package com.privacyguard.sensors
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.ImageFormat
+import android.graphics.Rect
+import android.graphics.YuvImage
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
@@ -12,6 +17,7 @@ import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import kotlinx.coroutines.*
 import timber.log.Timber
+import java.io.ByteArrayOutputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -58,6 +64,9 @@ class CameraSensor(
     // Configuration
     private val minAnalysisIntervalMs = 500L // Analyse toutes les 500ms (2 FPS)
     private var lastAnalysisTime = 0L
+    
+    // Dernière image capturée pour la capture d'intrus
+    private var lastCapturedBitmap: Bitmap? = null
     
     override suspend fun onStart() {
         Timber.d("CameraSensor: Initializing camera...")
@@ -191,6 +200,13 @@ class CameraSensor(
         Timber.d("CameraSensor: Processing frame ${imageProxy.width}x${imageProxy.height}")
         
         val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+        
+        // Sauvegarder le bitmap pour la capture d'intrus (si faces détectées)
+        try {
+            lastCapturedBitmap = imageProxyToBitmap(imageProxy)
+        } catch (e: Exception) {
+            Timber.d("CameraSensor: Could not save bitmap for intruder capture")
+        }
         
         // Détection de visages avec ML Kit
         faceDetector.process(image)
@@ -330,12 +346,63 @@ class CameraSensor(
     }
     
     /**
+     * Retourne la dernière image capturée (pour la capture d'intrus)
+     */
+    fun getLastCapturedBitmap(): Bitmap? = lastCapturedBitmap
+    
+    /**
+     * Convertit une ImageProxy en Bitmap
+     */
+    @androidx.camera.core.ExperimentalGetImage
+    private fun imageProxyToBitmap(imageProxy: ImageProxy): Bitmap? {
+        return try {
+            val image = imageProxy.image ?: return null
+            
+            val yBuffer = image.planes[0].buffer
+            val uBuffer = image.planes[1].buffer
+            val vBuffer = image.planes[2].buffer
+            
+            val ySize = yBuffer.remaining()
+            val uSize = uBuffer.remaining()
+            val vSize = vBuffer.remaining()
+            
+            val nv21 = ByteArray(ySize + uSize + vSize)
+            
+            yBuffer.get(nv21, 0, ySize)
+            vBuffer.get(nv21, ySize, vSize)
+            uBuffer.get(nv21, ySize + vSize, uSize)
+            
+            val yuvImage = YuvImage(
+                nv21,
+                ImageFormat.NV21,
+                imageProxy.width,
+                imageProxy.height,
+                null
+            )
+            
+            val out = ByteArrayOutputStream()
+            yuvImage.compressToJpeg(
+                Rect(0, 0, imageProxy.width, imageProxy.height),
+                80,
+                out
+            )
+            
+            val imageBytes = out.toByteArray()
+            BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+        } catch (e: Exception) {
+            Timber.e(e, "CameraSensor: Failed to convert ImageProxy to Bitmap")
+            null
+        }
+    }
+    
+    /**
      * Nettoyage des ressources
      */
     fun cleanup() {
         analysisScope.cancel()
         cameraExecutor.shutdown()
         faceDetector.close()
+        lastCapturedBitmap = null
     }
 }
 

@@ -17,6 +17,7 @@ import com.privacyguard.assessment.models.ProtectionAction
 import com.privacyguard.assessment.models.ProtectionMode
 import com.privacyguard.assessment.models.ThreatAssessment
 import com.privacyguard.protection.IndicatorState
+import com.privacyguard.protection.IntruderCapture
 import com.privacyguard.protection.OverlayManager
 import com.privacyguard.protection.ProtectionExecutor
 import com.privacyguard.sensors.SensorManager
@@ -104,6 +105,9 @@ class PrivacyGuardService : LifecycleService() {
     
     // Exécuteur de protection
     private var protectionExecutor: ProtectionExecutor? = null
+    
+    // Capture d'intrus
+    private var intruderCapture: IntruderCapture? = null
     
     override fun onCreate() {
         super.onCreate()
@@ -206,6 +210,12 @@ class PrivacyGuardService : LifecycleService() {
                     Timber.i("ThreatAssessmentEngine initialized with DISCRETE mode")
                 }
                 
+                        // Initialiser la capture d'intrus
+                if (intruderCapture == null) {
+                    intruderCapture = IntruderCapture(this@PrivacyGuardService)
+                    Timber.i("IntruderCapture initialized")
+                }
+                
                 // Initialiser l'OverlayManager et le ProtectionExecutor si permission accordée
                 initializeProtectionSystem()
                 
@@ -226,6 +236,11 @@ class PrivacyGuardService : LifecycleService() {
                             
                             // Exécuter l'action de protection si nécessaire
                             protectionExecutor?.executeProtection(assessment)
+                            
+                            // Capturer photo si menace haute
+                            if (assessment.threatLevel.name in listOf("HIGH", "CRITICAL")) {
+                                captureIntruderPhoto(assessment.threatLevel.name)
+                            }
                         }
                     } ?: Timber.e("PrivacyGuardService: combinedSensorData is null!")
                 }
@@ -350,6 +365,30 @@ class PrivacyGuardService : LifecycleService() {
      */
     fun hasOverlayPermission(): Boolean {
         return Settings.canDrawOverlays(this)
+    }
+    
+    /**
+     * Capture une photo d'intrus en cas de menace
+     */
+    private fun captureIntruderPhoto(threatLevel: String) {
+        lifecycleScope.launch {
+            try {
+                // Obtenir la dernière image de la caméra
+                val cameraSensor = sensorManager?.getCameraSensor()
+                val lastImage = cameraSensor?.getLastCapturedBitmap()
+                
+                if (lastImage != null) {
+                    val photo = intruderCapture?.captureFromBitmap(lastImage, threatLevel)
+                    if (photo != null) {
+                        Timber.i("📸 Intruder photo captured: ${photo.fileName}")
+                    }
+                } else {
+                    Timber.d("No camera image available for intruder capture")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error capturing intruder photo")
+            }
+        }
     }
     
     /**

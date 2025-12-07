@@ -277,6 +277,13 @@ class SensorManager(
         if (::motionSensor.isInitialized) motionSensor.cleanup()
         if (::proximitySensor.isInitialized) proximitySensor.cleanup()
     }
+    
+    /**
+     * Retourne le capteur caméra pour la capture d'intrus
+     */
+    fun getCameraSensor(): CameraSensor? {
+        return if (::cameraSensor.isInitialized) cameraSensor else null
+    }
 }
 
 /**

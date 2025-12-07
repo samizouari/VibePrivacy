@@ -187,35 +187,47 @@ fun processImage(image: Bitmap): FaceDetectionResult {
 ## 📅 État Actuel du Projet
 
 ### Jour en Cours
-**JOUR 4 - COMPLET** ✅
+**JOUR 7 - MVP COMPLET** ✅🎉
 
-**🎉 MILESTONES JOUR 3 (COMPLET) :**
-- ✅ Moteur de fusion multi-capteurs implémenté
-- ✅ Scoring pondéré avec seuils configurable
+**🎉 MILESTONES COMPLETS :**
+
+#### Jour 1-2 : Setup et Capteurs
+- ✅ Projet Android configuré
+- ✅ 4 capteurs (Camera, Audio, Motion, Proximity)
+- ✅ ML Kit Face Detection
+- ✅ Tests unitaires
+
+#### Jour 3 : Fusion et Évaluation
+- ✅ ThreatAssessmentEngine
+- ✅ SensorDataFusion  
+- ✅ ThreatScorer (scoring pondéré)
 - ✅ Pipeline temps réel avec Flow
-- ✅ Tests unitaires pour le scoring
 
-**🎉 MILESTONES JOUR 4 (COMPLET) :**
-- ✅ Système de protection complet avec overlays
-- ✅ Indicateur de confidentialité flottant
-- ✅ Overlay de flou progressif
-- ✅ Écran leurre (decoy screen)
-- ✅ Écran de verrouillage
-- ✅ Gestion permission SYSTEM_ALERT_WINDOW
+#### Jour 4 : Protection et Overlays
+- ✅ ProtectionExecutor
+- ✅ OverlayManager
+- ✅ PrivacyIndicatorView (vert/jaune/rouge)
+- ✅ SoftBlurOverlayView
+- ✅ DecoyScreenOverlayView
+- ✅ LockScreenOverlayView
 
-### Accomplissements Jour 4
+#### Jour 5 : Dashboard et Config
+- ✅ DashboardScreen (stats temps réel)
+- ✅ SettingsScreen (4 modes protection)
+- ✅ Navigation entre écrans
+- ✅ Persistance SharedPreferences
 
-**Protection et Overlays** :
-- ✅ `ProtectionExecutor.kt` - Exécution des actions de protection
-- ✅ `OverlayManager.kt` - Gestion centralisée des overlays
-- ✅ `PrivacyIndicatorView.kt` - Indicateur flottant (vert/jaune/rouge)
-- ✅ `SoftBlurOverlayView.kt` - Flou progressif avec raisons
-- ✅ `DecoyScreenOverlayView.kt` - Faux écran verrouillé avec horloge
-- ✅ `LockScreenOverlayView.kt` - Écran de verrouillage opaque
-- ✅ Intégration dans `PrivacyGuardService`
-- ✅ Gestion permission overlay dans `MainActivity`
+#### Jour 6 : Capture Intrus
+- ✅ IntruderCapture (photo auto + chiffrement AES)
+- ✅ IntruderGalleryScreen (galerie photos)
+- ✅ Nettoyage auto (30j, max 50)
 
-**Architecture complète** :
+#### Jour 7 : Documentation
+- ✅ MVP_ROADMAP.md mis à jour
+- ✅ SPEC.md mis à jour
+- ✅ Tests sur device complets
+
+### Architecture Finale
 ```
 SensorManager (4 capteurs)
        ↓
@@ -223,59 +235,67 @@ ThreatAssessmentEngine (fusion)
        ↓ Flow<ThreatAssessment>
 PrivacyGuardService
        ↓
-ProtectionExecutor
+ProtectionExecutor + IntruderCapture
        ↓
 OverlayManager
    ├── PrivacyIndicatorView (pilule vert/jaune/rouge)
    ├── SoftBlurOverlayView (flou + raisons)
    ├── DecoyScreenOverlayView (faux écran)
    └── LockScreenOverlayView (verrouillage)
+       ↓
+UI Screens
+   ├── MainActivity (Home)
+   ├── DashboardScreen (Stats)
+   ├── SettingsScreen (Config)
+   └── IntruderGalleryScreen (Photos)
 ```
 
-### Prochaine Tâche
-**JOUR 5 - Dashboard et Configuration** : 
-1. Dashboard avec statistiques temps réel
-2. Écran de paramètres (mode de protection)
-3. Sélection du mode (Paranoïa/Équilibré/Discret)
-4. Configuration de sensibilité par capteur
-   
-**Note** : Possibilité de réactiver Hilt/Room si nécessaire pour persistence des paramètres.
+### Fichiers Code Créés (MVP Complet)
 
-### Fichiers Documentation Créés
-- [x] README.md
-- [x] ARCHITECTURE.md
-- [x] FEATURES.md
-- [x] SENSORS.md
-- [x] UI_UX.md
-- [x] SECURITY_PRIVACY.md
-- [x] TECHNICAL_CHALLENGES.md
-- [x] ROADMAP.md
-- [x] CONTRIBUTING.md
-- [x] PROJECT_STRUCTURE.md
-- [x] PROJECT_CONTEXT.md
-- [x] MVP_ROADMAP.md
-- [x] WORKFLOW_VIBE_CODING_TEMPLATE.md
-- [x] SPEC.md (ce fichier)
+#### Capteurs (`sensors/`)
+- [x] `BaseSensor.kt` - Classe de base
+- [x] `CameraSensor.kt` - ML Kit Face Detection
+- [x] `AudioSensor.kt` - Niveau sonore + parole
+- [x] `MotionSensor.kt` - Accéléromètre
+- [x] `ProximitySensor.kt` - Capteur proximité
+- [x] `SensorManager.kt` - Gestionnaire centralisé
 
-### Fichiers Code Créés (Jour 1 - Matin)
-- [x] app/build.gradle.kts (corrigé et complété)
-- [x] gradle/libs.versions.toml (toutes dépendances)
-- [x] build.gradle.kts (plugin Hilt ajouté)
-- [x] app/src/main/AndroidManifest.xml (permissions + config)
-- [x] MainActivity.kt (UI Compose basique)
-- [x] Color.kt (palette sobre)
-- [x] Theme.kt (Material 3 + dark mode)
-- [x] Typography.kt (typographie moderne)
-- [x] strings.xml (français)
-- [x] themes.xml (Material 3)
+#### Évaluation (`assessment/`)
+- [x] `ThreatAssessmentEngine.kt` - Moteur principal
+- [x] `SensorDataFusion.kt` - Fusion multi-capteurs
+- [x] `ThreatScorer.kt` - Scoring pondéré
+- [x] `models/ThreatModels.kt` - Modèles données
+
+#### Protection (`protection/`)
+- [x] `ProtectionExecutor.kt` - Exécution actions
+- [x] `OverlayManager.kt` - Gestion overlays
+- [x] `PrivacyIndicatorView.kt` - Indicateur flottant
+- [x] `SoftBlurOverlayView.kt` - Flou progressif
+- [x] `DecoyScreenOverlayView.kt` - Écran leurre
+- [x] `LockScreenOverlayView.kt` - Verrouillage
+- [x] `IntruderCapture.kt` - Capture + chiffrement
+
+#### UI (`ui/`)
+- [x] `MainActivity.kt` - Home + navigation
+- [x] `screens/DashboardScreen.kt` - Stats temps réel
+- [x] `screens/SettingsScreen.kt` - Configuration
+- [x] `screens/IntruderGalleryScreen.kt` - Galerie photos
+- [x] `PermissionsScreen.kt` - Gestion permissions
+- [x] `CameraPreviewWithFaceDetection.kt` - Preview debug
+
+#### Service
+- [x] `PrivacyGuardService.kt` - Foreground service
+
+#### Tests
+- [x] `CameraSensorTest.kt`
+- [x] `AudioSensorTest.kt`
+- [x] `MotionSensorTest.kt`
+- [x] `ProximitySensorTest.kt`
 
 ### Git
 - [x] Branche "sami" créée
-- [x] Premier commit pushé sur GitHub
+- [x] ~30+ commits sur 7 jours
 - [x] Lien: https://github.com/samizouari/VibePrivacy/tree/sami
-
-### Documentation Workflow
-- [x] WORKFLOW_VIBE_CODING_TEMPLATE.md Phase 3 complétée
 
 ---
 
@@ -562,20 +582,25 @@ Checklist rapide avant de répondre :
 
 ---
 
-**Dernière mise à jour** : Jour 0 - Préparation terminée  
-**Prochaine action** : Démarrer Jour 1 - Setup Projet Android
+**Dernière mise à jour** : Jour 7 - MVP COMPLET  
+**Statut** : ✅ PRÊT POUR LA DÉMO
 
 ---
 
-## ✅ Checklist Finale Avant de Commencer
+## ✅ Checklist MVP Complète
 
-- [x] SPEC.md créé
+- [x] SPEC.md créé et mis à jour
 - [x] PROJECT_CONTEXT.md créé
-- [x] MVP_ROADMAP.md créé
-- [x] WORKFLOW_VIBE_CODING_TEMPLATE.md créé
-- [x] Toute la documentation de référence créée
-- [ ] Projet Android créé
-- [ ] Premier commit effectué
+- [x] MVP_ROADMAP.md créé et complété
+- [x] WORKFLOW_VIBE_CODING_TEMPLATE.md documenté
+- [x] Projet Android créé et fonctionnel
+- [x] 4 capteurs implémentés et testés
+- [x] Système de fusion et scoring
+- [x] Overlays de protection
+- [x] Dashboard et Settings
+- [x] Capture intrus avec chiffrement
+- [x] Tests sur device physique
+- [x] ~30+ commits
 
-**🚀 PRÊT À DÉMARRER LE DÉVELOPPEMENT ! 🚀**
+**🎉 MVP PRIVACY GUARD TERMINÉ ! 🎉**
 

@@ -55,7 +55,7 @@ class ThreatAssessmentEngine(
      */
     fun processFlow(sensorDataFlow: Flow<SensorDataSnapshot>): Flow<ThreatAssessment> {
         return sensorDataFlow
-            .debounce(100) // Anti-rebond 100ms pour éviter surcharge
+            .debounce(50) // Anti-rebond 50ms - Plus réactif
             .mapNotNull { snapshot ->
                 processSnapshot(snapshot)
             }

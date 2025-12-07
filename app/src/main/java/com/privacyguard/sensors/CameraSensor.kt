@@ -62,7 +62,7 @@ class CameraSensor(
     private val analysisScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     
     // Configuration
-    private val minAnalysisIntervalMs = 500L // Analyse toutes les 500ms (2 FPS)
+    private val minAnalysisIntervalMs = 200L // Analyse toutes les 200ms (5 FPS) - Plus réactif
     private var lastAnalysisTime = 0L
     
     // Dernière image capturée pour la capture d'intrus

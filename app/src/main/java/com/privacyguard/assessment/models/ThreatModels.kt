@@ -136,8 +136,8 @@ data class ThreatAssessmentConfig(
     val protectionMode: ProtectionMode = ProtectionMode.DISCRETE,
     val sensorWeights: SensorWeights = SensorWeights.DEFAULT,
     val minConfidenceThreshold: Float = 0.3f,   // Confiance minimale pour considérer
-    val debounceTimeMs: Long = 500,             // Anti-rebond entre déclenchements
-    val consecutiveThreatsBeforeAction: Int = 2 // Nombre de menaces avant action
+    val debounceTimeMs: Long = 200,             // Anti-rebond entre déclenchements (réduit pour réactivité)
+    val consecutiveThreatsBeforeAction: Int = 1 // 1 seule menace suffit (plus réactif)
 )
 
 

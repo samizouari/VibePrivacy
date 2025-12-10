@@ -22,8 +22,12 @@ import com.privacyguard.protection.OverlayManager
 import com.privacyguard.protection.ProtectionExecutor
 import com.privacyguard.sensors.SensorManager
 import com.privacyguard.sensors.ThreatLevel
+import com.privacyguard.trust.TrustZonesManager
+import com.privacyguard.trust.WiFiZoneDetector
+import com.privacyguard.trust.models.TrustZoneCheckResult
 import com.privacyguard.ui.MainActivity
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -97,6 +101,10 @@ class PrivacyGuardService : LifecycleService() {
     // Moteur d'évaluation des menaces
     private var threatAssessmentEngine: ThreatAssessmentEngine? = null
     
+    // Gestionnaire de zones de confiance
+    private var trustZonesManager: TrustZonesManager? = null
+    private var wifiDetector: WiFiZoneDetector? = null
+    
     // Job de collecte des données
     private var assessmentJob: Job? = null
     
@@ -164,6 +172,11 @@ class PrivacyGuardService : LifecycleService() {
         threatAssessmentEngine?.cleanup()
         threatAssessmentEngine = null
         
+        // Nettoyer les zones de confiance
+        trustZonesManager?.stopMonitoring()
+        trustZonesManager = null
+        wifiDetector = null
+        
         // Nettoyer le système de protection
         protectionExecutor?.cleanup()
         protectionExecutor = null
@@ -185,6 +198,11 @@ class PrivacyGuardService : LifecycleService() {
         
         isRunning = true
         isPaused = false
+        
+        // Initialiser le gestionnaire de zones de confiance
+        wifiDetector = WiFiZoneDetector(applicationContext)
+        trustZonesManager = TrustZonesManager(applicationContext, wifiDetector!!)
+        trustZonesManager?.startMonitoring()
         
         // Initialiser et démarrer tous les capteurs et la protection
         lifecycleScope.launch {
@@ -218,6 +236,14 @@ class PrivacyGuardService : LifecycleService() {
                 
                 // Initialiser l'OverlayManager et le ProtectionExecutor si permission accordée
                 initializeProtectionSystem()
+                
+                // Surveiller les zones de confiance
+                launch {
+                    while (isActive) {
+                        checkTrustZone()
+                        delay(5000) // Vérifier toutes les 5 secondes
+                    }
+                }
                 
                 // Collecter et analyser les données des capteurs
                 assessmentJob = launch {
@@ -286,6 +312,47 @@ class PrivacyGuardService : LifecycleService() {
         // Afficher l'indicateur de confidentialité
         overlayManager?.initializeIndicator()
         Timber.i("PrivacyGuardService: Privacy indicator shown")
+    }
+    
+    /**
+     * Vérifie si on est dans une zone de confiance
+     */
+    private fun checkTrustZone() {
+        val result = trustZonesManager?.checkCurrentLocation()
+        
+        when (result) {
+            is TrustZoneCheckResult.InTrustZone -> {
+                val zone = result.zone
+                Timber.d("TrustZones: In '${zone.name}' - behavior: ${zone.protectionBehavior}")
+                
+                // Informer le moteur d'évaluation qu'on est en zone de confiance
+                threatAssessmentEngine?.setTrustZone(true)
+                
+                // Appliquer le comportement de la zone
+                when (zone.protectionBehavior.protectionMode) {
+                    ProtectionMode.TRUST_ZONE -> {
+                        threatAssessmentEngine?.setProtectionMode(ProtectionMode.TRUST_ZONE)
+                    }
+                    ProtectionMode.DISCRETE -> {
+                        threatAssessmentEngine?.setProtectionMode(ProtectionMode.DISCRETE)
+                    }
+                    ProtectionMode.BALANCED -> {
+                        threatAssessmentEngine?.setProtectionMode(ProtectionMode.BALANCED)
+                    }
+                    null -> {
+                        // Protection désactivée dans cette zone
+                        // On ne fait rien, laisse le moteur gérer
+                    }
+                    else -> {}
+                }
+            }
+            is TrustZoneCheckResult.NotInTrustZone -> {
+                threatAssessmentEngine?.setTrustZone(false)
+            }
+            null -> {
+                // TrustZonesManager non initialisé
+            }
+        }
     }
     
     /**

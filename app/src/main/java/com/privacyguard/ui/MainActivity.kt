@@ -26,9 +26,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.privacyguard.R
 import com.privacyguard.assessment.models.ProtectionMode
+import com.privacyguard.ui.screens.AddZoneScreen
 import com.privacyguard.ui.screens.DashboardScreen
 import com.privacyguard.ui.screens.IntruderGalleryScreen
 import com.privacyguard.ui.screens.SettingsScreen
+import com.privacyguard.ui.screens.TrustZonesScreen
 import com.privacyguard.ui.theme.PrivacyGuardTheme
 import timber.log.Timber
 // import dagger.hilt.android.AndroidEntryPoint // TODO: Réactiver au Jour 2
@@ -40,7 +42,9 @@ enum class Screen {
     HOME,
     SETTINGS,
     DASHBOARD,
-    INTRUDER_GALLERY
+    INTRUDER_GALLERY,
+    TRUST_ZONES,
+    ADD_ZONE
 }
 
 /**
@@ -117,6 +121,19 @@ fun MainScreen() {
             DashboardScreen(
                 onBackClick = { currentScreen = Screen.HOME },
                 isProtectionActive = isProtectionEnabled
+            )
+            return
+        }
+        Screen.TRUST_ZONES -> {
+            TrustZonesScreen(
+                onNavigateBack = { currentScreen = Screen.HOME },
+                onNavigateToAddZone = { currentScreen = Screen.ADD_ZONE }
+            )
+            return
+        }
+        Screen.ADD_ZONE -> {
+            AddZoneScreen(
+                onNavigateBack = { currentScreen = Screen.TRUST_ZONES }
             )
             return
         }
@@ -313,6 +330,16 @@ fun MainScreen() {
             ) {
                 Text("📊 Dashboard")
             }
+        }
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        // Bouton Zones de Confiance
+        OutlinedButton(
+            onClick = { currentScreen = Screen.TRUST_ZONES },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("🏠 Zones de Confiance")
         }
         
         Spacer(modifier = Modifier.height(8.dp))

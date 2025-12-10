@@ -283,6 +283,6 @@ Chaque SPEC contient :
 
 ---
 
-*Rapport généré le 8 décembre 2024*  
-*Projet disponible sur GitHub : [samizouari/VibePrivacy](https://github.com/samizouari/VibePrivacy)*
+*Rapport généré le 8 décembre 2025*  
+*Projet disponible sur GitHub : [VibePrivacy](https://github.com/VibePrivacy)*
 

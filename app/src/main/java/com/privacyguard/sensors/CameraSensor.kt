@@ -39,7 +39,8 @@ import java.util.concurrent.Executors
  */
 class CameraSensor(
     context: Context,
-    private val lifecycleOwner: LifecycleOwner
+    private val lifecycleOwner: LifecycleOwner,
+    private val trustFacesManager: com.privacyguard.trust.TrustFacesManager? = null
 ) : BaseSensor<CameraData>(context, "CameraSensor") {
     
     private var camera: Camera? = null

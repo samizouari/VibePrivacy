@@ -1,7 +1,7 @@
 # Rapport de Projet : Privacy Guard MVP
 ## Développement par Vibe Coding avec IA
 
-**Auteur** : Sami  
+**Auteurs** : Farouk, Amazir, Sami  
 **Période** : Novembre - Décembre 2024  
 **Durée** : 7 jours (MVP) + Planification Post-MVP  
 **Méthode** : Vibe Coding avec assistance IA (Claude Sonnet 4.5)

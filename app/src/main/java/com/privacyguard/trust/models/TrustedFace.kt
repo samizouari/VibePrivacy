@@ -63,3 +63,5 @@ data class FaceRegistrationData(
     val thumbnailPhoto: ByteArray? = null
 )
 
+
+

@@ -278,8 +278,8 @@ private fun TrustZoneCard(
                     Icon(
                         imageVector = when {
                             zone.name.contains("Maison", ignoreCase = true) -> Icons.Default.Home
-                            zone.name.contains("Bureau", ignoreCase = true) -> Icons.Default.Work
-                            else -> Icons.Default.Place
+                            zone.name.contains("Bureau", ignoreCase = true) -> Icons.Default.Place
+                            else -> Icons.Default.LocationOn
                         },
                         contentDescription = null
                     )
@@ -309,7 +309,7 @@ private fun TrustZoneCard(
             if (zone.wifiSsids.isNotEmpty()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = Icons.Default.Wifi,
+                        imageVector = Icons.Default.Settings,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -401,4 +401,6 @@ private fun TrustZoneCard(
         )
     }
 }
+
+
 

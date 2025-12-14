@@ -105,7 +105,7 @@ class FaceEncoder(private val context: Context) {
         }
         
         for (i in avgEmbedding.indices) {
-            avgEmbedding[i] /= embeddings.size
+            avgEmbedding[i] = avgEmbedding[i] / embeddings.size
         }
         
         // Normaliser le résultat
@@ -228,4 +228,6 @@ class FaceEncoder(private val context: Context) {
         faceDetector.close()
     }
 }
+
+
 

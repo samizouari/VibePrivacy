@@ -87,6 +87,7 @@ dependencies {
     // Kotlin
     implementation(libs.kotlin.stdlib)
     implementation(libs.kotlinx.coroutines.android)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
     
     // AndroidX Core
     implementation(libs.androidx.core.ktx)
@@ -138,6 +139,9 @@ dependencies {
     
     // Timber (Logging)
     implementation(libs.timber)
+    
+    // Gson (JSON serialization)
+    implementation("com.google.code.gson:gson:2.10.1")
     
     // Material
     implementation(libs.material)

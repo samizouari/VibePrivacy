@@ -67,3 +67,5 @@ sealed class TrustZoneCheckResult {
     data class InTrustZone(val zone: TrustZone) : TrustZoneCheckResult()
 }
 
+
+

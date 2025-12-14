@@ -16,6 +16,8 @@ import com.privacyguard.trust.TrustZonesManager
 import com.privacyguard.trust.WiFiZoneDetector
 import com.privacyguard.trust.models.TrustZone
 import com.privacyguard.trust.models.TrustZoneProtection
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Écran d'ajout d'une zone de confiance
@@ -153,7 +155,7 @@ fun AddZoneScreen(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     Icon(
-                                        Icons.Default.Wifi,
+                                        Icons.Default.Check,
                                         null,
                                         modifier = Modifier.size(20.dp)
                                     )
@@ -323,4 +325,6 @@ private fun ProtectionOption(
         }
     }
 }
+
+
 

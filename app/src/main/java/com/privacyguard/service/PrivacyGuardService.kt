@@ -239,7 +239,7 @@ class PrivacyGuardService : LifecycleService() {
                 
                 // Surveiller les zones de confiance
                 launch {
-                    while (isActive) {
+                    while (isRunning) {
                         checkTrustZone()
                         delay(5000) // Vérifier toutes les 5 secondes
                     }

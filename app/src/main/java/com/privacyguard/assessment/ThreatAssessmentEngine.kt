@@ -55,9 +55,38 @@ class ThreatAssessmentEngine(
      */
     fun processFlow(sensorDataFlow: Flow<SensorDataSnapshot>): Flow<ThreatAssessment> {
         return sensorDataFlow
-            .debounce(50) // Anti-rebond 50ms - Plus réactif
+            .debounce(100) // Anti-rebond 100ms - stabilité améliorée
             .mapNotNull { snapshot ->
                 processSnapshot(snapshot)
+            }
+            .scan(null as Pair<ThreatAssessment, Int>?) { prev, current ->
+                // Compteur de stabilité : si le niveau change, reset à 0
+                // Si le niveau reste stable, incrémenter
+                val sameLevel = prev?.first?.threatLevel == current.threatLevel
+                val stableCount = if (sameLevel) (prev?.second ?: 0) + 1 else 1
+                Pair(current, stableCount)
+            }
+            .mapNotNull { pair ->
+                val (assessment, stableCount) = pair ?: return@mapNotNull null
+                
+                // FILTRE DE STABILITÉ : 
+                // - Changement vers NONE/LOW : nécessite 2 échantillons stables
+                // - Changement vers MEDIUM+ : nécessite 2 échantillons pour éviter faux positifs
+                // - CRITICAL : immédiat (urgence)
+                when {
+                    assessment.threatLevel == ThreatLevel.CRITICAL -> {
+                        // Critique : réagir immédiatement
+                        assessment
+                    }
+                    stableCount >= 2 -> {
+                        // Niveau stable depuis 2+ lectures : émettre
+                        assessment
+                    }
+                    else -> {
+                        // Pas encore stable : ne pas émettre (attendre prochain échantillon)
+                        null
+                    }
+                }
             }
             .distinctUntilChangedBy { assessment ->
                 // Éviter émissions répétées si pas de changement significatif
@@ -65,14 +94,14 @@ class ThreatAssessmentEngine(
                 Triple(
                     assessment.threatLevel,
                     assessment.shouldTriggerProtection,
-                    assessment.threatScore / 10  // Arrondir par 10 pour réduire le bruit
+                    assessment.threatScore / 15  // Arrondir par 15 pour réduire le bruit
                 )
             }
             .onEach { assessment ->
                 _lastAssessment.value = assessment
                 addToHistory(assessment)
                 
-                Timber.i("ThreatAssessmentEngine: Assessment emitted - Score=${assessment.threatScore}, Level=${assessment.threatLevel}, Trigger=${assessment.shouldTriggerProtection}")
+                Timber.i("✅ ThreatAssessmentEngine: STABLE assessment emitted - Score=${assessment.threatScore}, Level=${assessment.threatLevel}, Trigger=${assessment.shouldTriggerProtection}")
                 
                 if (assessment.shouldTriggerProtection) {
                     Timber.w("ThreatAssessmentEngine: ⚠️ THREAT DETECTED! " +

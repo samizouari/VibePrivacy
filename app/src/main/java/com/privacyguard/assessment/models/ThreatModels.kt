@@ -57,12 +57,12 @@ data class SensorWeights(
             proximity = 0.10f
         )
         
-        /** Pondération Mode Paranoïa (tous les capteurs importants) */
+        /** Pondération Mode Paranoïa (caméra et audio prioritaires) */
         val PARANOIA = SensorWeights(
-            camera = 0.35f,
-            audio = 0.30f,
-            motion = 0.25f,
-            proximity = 0.10f
+            camera = 0.50f,   // 50% - Visages = menace principale
+            audio = 0.35f,    // 35% - Sons suspects
+            motion = 0.10f,   // 10% - Mouvements (réduit car trop de bruit)
+            proximity = 0.05f // 5% - Proximité
         )
     }
 }

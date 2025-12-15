@@ -222,10 +222,20 @@ class PrivacyGuardService : LifecycleService() {
                 
                 // Initialiser le moteur d'évaluation des menaces
                 if (threatAssessmentEngine == null) {
-                    threatAssessmentEngine = ThreatAssessmentEngine().apply {
-                        setProtectionMode(ProtectionMode.DISCRETE) // Mode Discret par défaut (MVP)
+                    // Lire le mode sauvegardé dans les préférences
+                    val prefs = getSharedPreferences("privacy_guard_prefs", Context.MODE_PRIVATE)
+                    val savedModeName = prefs.getString("protection_mode", ProtectionMode.DISCRETE.name)
+                    val selectedMode = try {
+                        ProtectionMode.valueOf(savedModeName ?: ProtectionMode.DISCRETE.name)
+                    } catch (e: Exception) {
+                        Timber.w("Invalid protection mode '$savedModeName', using DISCRETE")
+                        ProtectionMode.DISCRETE
                     }
-                    Timber.i("ThreatAssessmentEngine initialized with DISCRETE mode")
+                    
+                    threatAssessmentEngine = ThreatAssessmentEngine().apply {
+                        setProtectionMode(selectedMode)
+                    }
+                    Timber.i("ThreatAssessmentEngine initialized with ${selectedMode.name} mode (threshold=${selectedMode.threshold})")
                 }
                 
                         // Initialiser la capture d'intrus
@@ -358,27 +368,37 @@ class PrivacyGuardService : LifecycleService() {
     /**
      * Met à jour l'indicateur selon l'évaluation
      * 
-     * Utilise une logique hybride :
-     * - Score global pour les niveaux intermédiaires
-     * - ThreatLevel HIGH/CRITICAL d'un capteur pour forcer le rouge
+     * LOGIQUE CORRIGÉE POUR STABILITÉ :
+     * - Utilise principalement le score global (pas de logique hybride complexe)
+     * - Seuils clairs et cohérents avec ThreatLevel
+     * - Correspond aux seuils de SensorDataFusion.scoreToThreatLevel()
      */
     private fun updateIndicatorFromAssessment(assessment: ThreatAssessment) {
-        // Vérifier si un capteur individuel a une menace HIGH ou CRITICAL
-        val hasHighThreat = assessment.sensorContributions.let { contrib ->
-            // Si le score d'un capteur est > 60%, c'est une menace significative
-            contrib.cameraScore > 0.6f || contrib.audioScore > 0.6f
-        }
-        
-        val state = when {
-            // Rouge si protection déclenchée OU menace haute/critique
-            assessment.shouldTriggerProtection -> IndicatorState.THREAT
-            assessment.threatLevel == ThreatLevel.CRITICAL || assessment.threatLevel == ThreatLevel.HIGH -> IndicatorState.THREAT
-            assessment.threatScore >= 50 -> IndicatorState.MONITORING  // Jaune si score modéré
-            else -> IndicatorState.SAFE
+        // Utiliser le ThreatLevel calculé par l'engine (plus cohérent)
+        val state = when (assessment.threatLevel) {
+            ThreatLevel.CRITICAL, ThreatLevel.HIGH -> {
+                // Rouge : menace élevée ou critique
+                IndicatorState.THREAT
+            }
+            ThreatLevel.MEDIUM -> {
+                // Jaune : menace moyenne (score 40-59)
+                IndicatorState.MONITORING
+            }
+            ThreatLevel.LOW, ThreatLevel.NONE -> {
+                // Vert : pas de menace ou menace faible
+                IndicatorState.SAFE
+            }
         }
         
         protectionExecutor?.updateIndicatorState(state)
-        Timber.i("Indicator: $state | Score=${assessment.threatScore} | Camera=${(assessment.sensorContributions.cameraScore * 100).toInt()}% | Audio=${(assessment.sensorContributions.audioScore * 100).toInt()}%")
+        
+        // Log détaillé avec contributions
+        val contrib = assessment.sensorContributions
+        Timber.i("🚦 Indicator: $state | ThreatLevel=${assessment.threatLevel} | Score=${assessment.threatScore}/100 | " +
+                "📹 Camera=${(contrib.cameraScore * 100).toInt()}% | " +
+                "🔊 Audio=${(contrib.audioScore * 100).toInt()}% | " +
+                "📱 Motion=${(contrib.motionScore * 100).toInt()}% | " +
+                "👋 Proximity=${(contrib.proximityScore * 100).toInt()}%")
     }
     
     /**

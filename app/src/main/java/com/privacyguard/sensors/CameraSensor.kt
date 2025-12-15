@@ -218,13 +218,13 @@ class CameraSensor(
                 Timber.e(e, "CameraSensor: ML Kit FAILED - ${e.message}")
                 // Émettre des données même en cas d'erreur pour que camera != null
                 val errorData = CameraData(
-                    timestamp = currentTime,
-                    threatLevel = ThreatLevel.NONE,
-                    confidence = 0f,
-                    facesDetected = 0,
-                    facesLookingAtScreen = 0,
-                    unknownFacesCount = 0
-                )
+                        timestamp = currentTime,
+                        threatLevel = ThreatLevel.NONE,
+                        confidence = 0f,
+                        facesDetected = 0,
+                        facesLookingAtScreen = 0,
+                        unknownFacesCount = 0
+                    )
                 Timber.d("CameraSensor: Emitting error fallback data")
                 emitData(errorData)
             }
@@ -287,14 +287,14 @@ class CameraSensor(
         
         // Émettre les données
         val cameraDataToEmit = CameraData(
-            timestamp = timestamp,
-            threatLevel = threatLevel,
-            confidence = confidence,
-            facesDetected = facesCount,
-            facesLookingAtScreen = facesLookingAtScreen,
-            unknownFacesCount = facesCount, // Pour MVP, tous les visages sont "inconnus"
-            distanceToCamera = null // Sera calculé plus tard avec reconnaissance faciale
-        )
+                timestamp = timestamp,
+                threatLevel = threatLevel,
+                confidence = confidence,
+                facesDetected = facesCount,
+                facesLookingAtScreen = facesLookingAtScreen,
+                unknownFacesCount = facesCount, // Pour MVP, tous les visages sont "inconnus"
+                distanceToCamera = null // Sera calculé plus tard avec reconnaissance faciale
+            )
         
         Timber.i("CameraSensor: EMITTING data - faces=$facesCount, looking=$facesLookingAtScreen, threat=$threatLevel")
         emitData(cameraDataToEmit)

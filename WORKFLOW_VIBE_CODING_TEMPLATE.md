@@ -1198,7 +1198,7 @@ TODO Jour 2: Démarre les capteurs (Camera, Audio, Motion, Proximity)
 
 ### Retour d'Expérience Personnel
 
-**Ce qui m'a surpris** :
+**Ce qui m'a surpris** :  
 
 1. **L'IA génère du code fonctionnel mais avec des erreurs subtiles** : Le code compile souvent, mais des détails comme les formats d'image ou les versions de plugins peuvent causer des problèmes à l'exécution. Toujours tester sur device physique rapidement.
 
@@ -1208,7 +1208,7 @@ TODO Jour 2: Démarre les capteurs (Camera, Audio, Motion, Proximity)
 
 4. **Le debugging avec l'IA est très efficace** : Copier la stacktrace + le code problématique dans un prompt permet de résoudre les bugs rapidement (15-30 min vs 2-3h manuellement).
 
-**Ce que j'ai appris** :
+**Ce que j'ai appris** :  
 
 1. **Vibe Coding = Documentation + Code itératif** : Commencer par documenter exhaustivement permet d'aller beaucoup plus vite ensuite. L'IA comprend mieux le contexte et génère du code plus pertinent.
 
@@ -1220,7 +1220,7 @@ TODO Jour 2: Démarre les capteurs (Camera, Audio, Motion, Proximity)
 
 5. **L'IA est excellente pour générer la structure, moins pour les détails** : Architecture, classes de base, flow général = très bon. Formats spécifiques, versions compatibles, edge cases Android = nécessite vérification manuelle.
 
-**Ce que je ferais différemment** :
+**Ce que je ferais différemment** :  
 
 1. **Tester la compilation AVANT de commit** : Plusieurs commits de fixes auraient pu être évités en testant systématiquement après chaque génération de code.
 

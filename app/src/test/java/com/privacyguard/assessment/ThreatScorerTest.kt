@@ -254,7 +254,7 @@ class ThreatScorerTest {
             contributions.cameraScore * contributions.cameraWeight +
             contributions.audioScore * contributions.audioWeight
         ) * 100
-        assertEquals(expectedScore.toInt(), finalScore, 5) // Tolérance de 5
+        assertEquals(expectedScore.toInt().toLong(), finalScore.toLong(), 5L) // Tolérance de 5
     }
     
     // ==================== Tests de confiance ====================

@@ -82,30 +82,40 @@ class ThreatScorer {
      * - Visages inconnus
      * - Distance à la caméra
      * 
-     * IMPORTANT: Scores augmentés pour menaces réelles
+     * IMPORTANT: Scores ajustés pour éviter faux positifs
+     * 1 visage seul = utilisateur normal → score très faible
      */
     private fun normalizeCameraData(data: CameraData?): Float {
         if (data == null) return 0f
         
         var score = 0f
         
-        // Facteur 1 : Nombre de visages (0-0.4)
-        // Plus de visages = plus de risque
+        // CAS SPÉCIAL : 1 seul visage = probablement l'utilisateur légitime
+        // Score minimal pour éviter faux positifs
+        if (data.facesDetected == 1) {
+            // Score faible uniquement si regarde l'écran (sinon suspect)
+            return if (data.facesLookingAtScreen == 1) {
+                0.02f  // 2% - usage normal
+            } else {
+                0.15f  // 15% - visage détecté mais ne regarde pas (quelqu'un à côté ?)
+            }
+        }
+        
+        // Facteur 1 : Nombre de visages (0-0.5)
+        // Plusieurs visages = menace potentielle
         val faceCountScore = when {
             data.facesDetected == 0 -> 0f
-            data.facesDetected == 1 -> 0.1f  // Probablement l'utilisateur
-            data.facesDetected == 2 -> 0.35f // 2 personnes = menace significative
-            else -> 0.4f  // 3+ visages = max
+            data.facesDetected == 2 -> 0.4f  // 2 personnes = menace significative
+            else -> 0.5f  // 3+ visages = menace élevée
         }
         score += faceCountScore
         
-        // Facteur 2 : Visages regardant l'écran (0-0.5)
-        // Si quelqu'un regarde l'écran, c'est suspect
+        // Facteur 2 : Visages regardant l'écran (0-0.4)
+        // Si plusieurs personnes regardent, c'est suspect
         val lookingScore = when {
             data.facesLookingAtScreen == 0 -> 0f
-            data.facesLookingAtScreen == 1 && data.facesDetected == 1 -> 0.05f  // Probablement utilisateur
-            data.facesLookingAtScreen == 1 && data.facesDetected >= 2 -> 0.4f  // Autre personne regarde
-            else -> 0.5f  // Plusieurs regardent = menace élevée
+            data.facesLookingAtScreen == 1 && data.facesDetected >= 2 -> 0.3f  // Une autre personne regarde
+            else -> 0.4f  // Plusieurs regardent = menace élevée
         }
         score += lookingScore
         
@@ -167,34 +177,38 @@ class ThreatScorer {
      * 
      * Facteurs considérés :
      * - Intensité du mouvement
-     * - Mouvement détecté
+     * - Mouvements brusques (quelqu'un attrape le téléphone)
+     * 
+     * IMPORTANT: Mouvement normal ne devrait PAS déclencher de menace
+     * Seuls les mouvements BRUSQUES sont suspects
      */
     private fun normalizeMotionData(data: MotionData?): Float {
         if (data == null) return 0f
         
         var score = 0f
         
-        // Facteur 1 : Mouvement en cours (0-0.3)
-        if (data.isMoving) {
-            score += 0.3f
-        }
-        
-        // Facteur 2 : Intensité du mouvement (0-0.5)
-        // movementIntensity est déjà normalisé (0-1)
-        score += data.movementIntensity * 0.5f
-        
-        // Facteur 3 : Magnitude de l'accélération (0-0.2)
+        // Facteur principal : Magnitude de l'accélération
         // Accélération > 15 m/s² = mouvement brusque (quelqu'un attrape le téléphone)
         val magnitudeScore = when {
-            data.magnitude < 10f -> 0f       // Normal (gravité ~9.8)
+            data.magnitude < 12f -> 0f       // Normal (gravité ~9.8)
             data.magnitude < 15f -> 0.1f     // Léger mouvement
-            data.magnitude < 20f -> 0.15f    // Mouvement notable
-            else -> 0.2f                     // Mouvement brusque
+            data.magnitude < 20f -> 0.3f     // Mouvement brusque - SUSPECT
+            data.magnitude < 25f -> 0.5f     // Très brusque
+            else -> 0.7f                     // Arrachage du téléphone
         }
         score += magnitudeScore
         
+        // Bonus uniquement pour intensité ÉLEVÉE (pas mouvement normal)
+        if (data.movementIntensity > 0.7f) {
+            score += 0.3f  // Mouvement intense continu
+        }
+        
         // Appliquer la confiance du capteur
-        return (score * data.confidence).coerceIn(0f, 1f)
+        val finalScore = (score * data.confidence).coerceIn(0f, 1f)
+        
+        Timber.d("MotionScore: magnitude=${data.magnitude}, intensity=${data.movementIntensity}, final=$finalScore")
+        
+        return finalScore
     }
     
     /**
@@ -203,29 +217,37 @@ class ThreatScorer {
      * Facteurs considérés :
      * - Objet proche détecté
      * - Distance (si capteur non-binaire)
+     * 
+     * IMPORTANT: isNear=true en usage normal (utilisateur regarde l'écran)
+     * Seule une TRÈS proche distance (< 1cm) est suspecte
      */
     private fun normalizeProximityData(data: ProximityData?): Float {
         if (data == null) return 0f
         
-        var score = 0f
-        
-        // Facteur principal : objet proche
-        if (data.isNear) {
-            // Beaucoup de capteurs de proximité sont binaires (proche/loin)
-            // Si proche, c'est potentiellement une main devant l'écran
-            score = 0.7f
+        // Capteurs de proximité sont souvent binaires (proche/loin)
+        // isNear = true peut être usage normal (utilisateur regarde l'écran)
+        val score = if (data.isNear) {
+            // Score faible par défaut (usage normal)
+            var proximityScore = 0.15f
             
-            // Bonus si distance disponible et très proche
+            // Score élevé UNIQUEMENT si TRÈS proche (main cachant l'écran)
             if (data.distance < 1f && data.maxRange > 5f) {
-                score = 0.9f  // Très proche
+                proximityScore = 0.7f  // Vraiment très proche = suspect
+            } else if (data.distance < 2f && data.maxRange > 5f) {
+                proximityScore = 0.4f  // Proche = possiblement suspect
             }
+            proximityScore
         } else {
-            // Pas d'objet proche = faible score
-            score = 0f
+            // Pas d'objet proche = pas de menace
+            0f
         }
         
         // Appliquer la confiance du capteur
-        return (score * data.confidence).coerceIn(0f, 1f)
+        val finalScore = (score * data.confidence).coerceIn(0f, 1f)
+        
+        Timber.d("ProximityScore: distance=${data.distance}cm, isNear=${data.isNear}, final=$finalScore")
+        
+        return finalScore
     }
     
     /**

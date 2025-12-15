@@ -102,13 +102,20 @@ class SensorDataFusion(
     
     /**
      * Convertit un score (0-100) en niveau de menace
+     * 
+     * Seuils ajustés pour réduire faux positifs :
+     * - NONE: 0-30 (usage normal)
+     * - LOW: 30-50 (surveillance)
+     * - MEDIUM: 50-70 (alerte modérée)
+     * - HIGH: 70-85 (menace sérieuse)
+     * - CRITICAL: 85+ (menace confirmée)
      */
     private fun scoreToThreatLevel(score: Int): ThreatLevel {
         return when {
-            score < 20 -> ThreatLevel.NONE
-            score < 40 -> ThreatLevel.LOW
-            score < 60 -> ThreatLevel.MEDIUM
-            score < 80 -> ThreatLevel.HIGH
+            score < 30 -> ThreatLevel.NONE
+            score < 50 -> ThreatLevel.LOW
+            score < 70 -> ThreatLevel.MEDIUM
+            score < 85 -> ThreatLevel.HIGH
             else -> ThreatLevel.CRITICAL
         }
     }
@@ -137,7 +144,7 @@ class SensorDataFusion(
     private fun identifyTriggerReasons(
         snapshot: SensorDataSnapshot,
         contributions: SensorContributions,
-        config: ThreatAssessmentConfig
+        @Suppress("UNUSED_PARAMETER") config: ThreatAssessmentConfig
     ): List<String> {
         val reasons = mutableListOf<String>()
         
@@ -250,9 +257,10 @@ class SensorDataFusion(
             }
             
             // Mode Discret (par défaut pour MVP)
+            // Seuils plus élevés pour éviter fausses alertes
             else -> when {
-                threatScore >= 90 -> ProtectionAction.DECOY_SCREEN
-                threatScore >= 75 -> ProtectionAction.SOFT_BLUR
+                threatScore >= 85 -> ProtectionAction.DECOY_SCREEN  // Menace critique uniquement
+                threatScore >= 70 -> ProtectionAction.SOFT_BLUR     // Menace haute confirmée
                 else -> ProtectionAction.NONE
             }
         }

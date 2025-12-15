@@ -370,10 +370,10 @@ class PrivacyGuardService : LifecycleService() {
         }
         
         val state = when {
-            // Rouge si protection déclenchée OU menace haute sur un capteur
+            // Rouge si protection déclenchée OU menace haute/critique
             assessment.shouldTriggerProtection -> IndicatorState.THREAT
-            hasHighThreat -> IndicatorState.THREAT
-            assessment.threatScore >= 40 -> IndicatorState.MONITORING  // Seuil baissé à 40
+            assessment.threatLevel == ThreatLevel.CRITICAL || assessment.threatLevel == ThreatLevel.HIGH -> IndicatorState.THREAT
+            assessment.threatScore >= 50 -> IndicatorState.MONITORING  // Jaune si score modéré
             else -> IndicatorState.SAFE
         }
         

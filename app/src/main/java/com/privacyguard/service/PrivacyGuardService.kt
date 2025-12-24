@@ -204,16 +204,29 @@ class PrivacyGuardService : LifecycleService() {
         trustZonesManager = TrustZonesManager(applicationContext, wifiDetector!!)
         trustZonesManager?.startMonitoring()
         
+        // Initialiser le gestionnaire de visages de confiance
+        val faceEncoder = com.privacyguard.trust.FaceEncoder(applicationContext)
+        val faceMatcher = com.privacyguard.trust.FaceMatcher()
+        val trustFacesManager = com.privacyguard.trust.TrustFacesManager(
+            applicationContext,
+            faceEncoder,
+            faceMatcher
+        )
+        
         // Initialiser et démarrer tous les capteurs et la protection
         lifecycleScope.launch {
             try {
                 // Initialiser le SensorManager si pas déjà fait
                 if (sensorManager == null) {
-                    Timber.d("PrivacyGuardService: Initializing SensorManager...")
-                    sensorManager = SensorManager(this@PrivacyGuardService, this@PrivacyGuardService).apply {
+                    Timber.d("PrivacyGuardService: Initializing SensorManager with TrustFaces...")
+                    sensorManager = SensorManager(
+                        this@PrivacyGuardService,
+                        this@PrivacyGuardService,
+                        trustFacesManager
+                    ).apply {
                         initialize()
                     }
-                    Timber.i("PrivacyGuardService: SensorManager initialized")
+                    Timber.i("PrivacyGuardService: SensorManager initialized with face recognition")
                 }
                 
                 // Démarrer tous les capteurs

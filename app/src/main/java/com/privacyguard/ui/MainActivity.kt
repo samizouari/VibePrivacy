@@ -27,10 +27,12 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.privacyguard.R
 import com.privacyguard.assessment.models.ProtectionMode
 import com.privacyguard.ui.screens.AddZoneScreen
+import com.privacyguard.ui.screens.AddTrustedFaceScreen
 import com.privacyguard.ui.screens.DashboardScreen
 import com.privacyguard.ui.screens.IntruderGalleryScreen
 import com.privacyguard.ui.screens.SettingsScreen
 import com.privacyguard.ui.screens.TrustZonesScreen
+import com.privacyguard.ui.screens.TrustedFacesScreen
 import com.privacyguard.ui.theme.PrivacyGuardTheme
 import timber.log.Timber
 // import dagger.hilt.android.AndroidEntryPoint // TODO: Réactiver au Jour 2
@@ -44,7 +46,9 @@ enum class Screen {
     DASHBOARD,
     INTRUDER_GALLERY,
     TRUST_ZONES,
-    ADD_ZONE
+    ADD_ZONE,
+    TRUSTED_FACES,
+    ADD_TRUSTED_FACE
 }
 
 /**
@@ -134,6 +138,20 @@ fun MainScreen() {
         Screen.ADD_ZONE -> {
             AddZoneScreen(
                 onNavigateBack = { currentScreen = Screen.TRUST_ZONES }
+            )
+            return
+        }
+        Screen.TRUSTED_FACES -> {
+            TrustedFacesScreen(
+                onNavigateBack = { currentScreen = Screen.HOME },
+                onNavigateToAdd = { currentScreen = Screen.ADD_TRUSTED_FACE }
+            )
+            return
+        }
+        Screen.ADD_TRUSTED_FACE -> {
+            AddTrustedFaceScreen(
+                onNavigateBack = { currentScreen = Screen.TRUSTED_FACES },
+                onSuccess = { currentScreen = Screen.TRUSTED_FACES }
             )
             return
         }
@@ -340,6 +358,16 @@ fun MainScreen() {
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("🏠 Zones de Confiance")
+        }
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        // Bouton Visages de Confiance
+        OutlinedButton(
+            onClick = { currentScreen = Screen.TRUSTED_FACES },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("👤 Visages de Confiance")
         }
         
         Spacer(modifier = Modifier.height(8.dp))

@@ -39,7 +39,8 @@ import java.util.concurrent.Executors
  */
 class CameraSensor(
     context: Context,
-    private val lifecycleOwner: LifecycleOwner
+    private val lifecycleOwner: LifecycleOwner,
+    private val trustFacesManager: com.privacyguard.trust.TrustFacesManager? = null
 ) : BaseSensor<CameraData>(context, "CameraSensor") {
     
     private var camera: Camera? = null
@@ -278,6 +279,121 @@ class CameraSensor(
             }
         }
         
+        // Vérifier quels visages sont connus (async)
+        if (trustFacesManager != null && lastCapturedBitmap != null) {
+            analysisScope.launch {
+                try {
+                    val unknownCount = countUnknownFaces(lastCapturedBitmap!!, faces)
+                    
+                    // Si tous les visages sont connus, réduire la menace
+                    val adjustedThreatLevel = if (unknownCount == 0 && facesCount > 0) {
+                        Timber.i("CameraSensor: ✓ Tous les visages sont de confiance - réduction de menace")
+                        ThreatLevel.LOW // Visages de confiance = faible menace
+                    } else {
+                        // Évaluer normalement
+                        evaluateThreatLevel(
+                            facesCount = unknownCount, // Compter seulement les inconnus
+                            facesLookingAtScreen = facesLookingAtScreen,
+                            closestFaceSize = closestFaceDistance
+                        ).first
+                    }
+                    
+                    emitData(
+                        CameraData(
+                            timestamp = timestamp,
+                            threatLevel = adjustedThreatLevel,
+                            confidence = 0.9f,
+                            facesDetected = facesCount,
+                            facesLookingAtScreen = facesLookingAtScreen,
+                            unknownFacesCount = unknownCount,
+                            distanceToCamera = null
+                        )
+                    )
+                } catch (e: Exception) {
+                    Timber.e(e, "CameraSensor: Error in face recognition")
+                    // Fallback sur l'évaluation normale
+                    emitDataWithoutRecognition(
+                        timestamp, facesCount, facesLookingAtScreen, closestFaceDistance
+                    )
+                }
+            }
+        } else {
+            // Pas de reconnaissance ou pas de bitmap - évaluation normale
+            emitDataWithoutRecognition(
+                timestamp, facesCount, facesLookingAtScreen, closestFaceDistance
+            )
+        }
+    }
+    
+    /**
+     * Compte le nombre de visages inconnus (non dans la liste de confiance)
+     */
+    private suspend fun countUnknownFaces(bitmap: Bitmap, faces: List<Face>): Int {
+        val faceEncoder = com.privacyguard.trust.FaceEncoder(context)
+        
+        var unknownCount = 0
+        
+        for (face in faces) {
+            try {
+                // Cropper le visage
+                val faceBitmap = cropFace(bitmap, face.boundingBox)
+                
+                // Encoder le visage
+                val encoding = withContext(Dispatchers.IO) {
+                    faceEncoder.encode(faceBitmap)
+                }
+                
+                if (encoding != null) {
+                    // Vérifier si c'est un visage de confiance
+                    val matchResult = trustFacesManager!!.recognizeFaceFromEncoding(encoding)
+                    
+                    if (matchResult is com.privacyguard.trust.models.FaceMatchResult.Unknown) {
+                        unknownCount++
+                        Timber.d("CameraSensor: Visage inconnu détecté")
+                    } else if (matchResult is com.privacyguard.trust.models.FaceMatchResult.Trusted) {
+                        Timber.d("CameraSensor: ✓ Visage de confiance reconnu: ${matchResult.face.name}")
+                    }
+                } else {
+                    // Impossible d'encoder → considérer comme inconnu
+                    unknownCount++
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "CameraSensor: Error processing face for recognition")
+                unknownCount++ // En cas d'erreur, considérer comme inconnu
+            }
+        }
+        
+        faceEncoder.cleanup()
+        return unknownCount
+    }
+    
+    /**
+     * Cropper un visage depuis le bitmap complet
+     */
+    private fun cropFace(bitmap: Bitmap, boundingBox: Rect): Bitmap {
+        // Ajouter une marge de 20%
+        val margin = (boundingBox.width() * 0.2f).toInt()
+        
+        val left = (boundingBox.left - margin).coerceAtLeast(0)
+        val top = (boundingBox.top - margin).coerceAtLeast(0)
+        val right = (boundingBox.right + margin).coerceAtMost(bitmap.width)
+        val bottom = (boundingBox.bottom + margin).coerceAtMost(bitmap.height)
+        
+        val width = right - left
+        val height = bottom - top
+        
+        return Bitmap.createBitmap(bitmap, left, top, width, height)
+    }
+    
+    /**
+     * Émet les données sans reconnaissance faciale (fallback)
+     */
+    private fun emitDataWithoutRecognition(
+        timestamp: Long,
+        facesCount: Int,
+        facesLookingAtScreen: Int,
+        closestFaceDistance: Float
+    ) {
         // Évaluer le niveau de menace
         val (threatLevel, confidence) = evaluateThreatLevel(
             facesCount = facesCount,
@@ -292,8 +408,8 @@ class CameraSensor(
                 confidence = confidence,
                 facesDetected = facesCount,
                 facesLookingAtScreen = facesLookingAtScreen,
-                unknownFacesCount = facesCount, // Pour MVP, tous les visages sont "inconnus"
-                distanceToCamera = null // Sera calculé plus tard avec reconnaissance faciale
+                unknownFacesCount = facesCount, // Sans reconnaissance, tous inconnus
+                distanceToCamera = null
             )
         
         Timber.i("CameraSensor: EMITTING data - faces=$facesCount, looking=$facesLookingAtScreen, threat=$threatLevel")

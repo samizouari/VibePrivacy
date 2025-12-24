@@ -19,7 +19,8 @@ import timber.log.Timber
  */
 class SensorManager(
     private val context: Context,
-    private val lifecycleOwner: LifecycleOwner
+    private val lifecycleOwner: LifecycleOwner,
+    private val trustFacesManager: com.privacyguard.trust.TrustFacesManager? = null
 ) {
     
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
@@ -72,12 +73,12 @@ class SensorManager(
         Timber.i("SensorManager: Initializing sensors...")
         
         try {
-            cameraSensor = CameraSensor(context, lifecycleOwner)
+            cameraSensor = CameraSensor(context, lifecycleOwner, trustFacesManager)
             audioSensor = AudioSensor(context)
             motionSensor = MotionSensor(context)
             proximitySensor = ProximitySensor(context)
             
-            Timber.i("SensorManager: All sensors initialized")
+            Timber.i("SensorManager: All sensors initialized (trustFaces=${trustFacesManager != null})")
         } catch (e: Exception) {
             Timber.e(e, "SensorManager: Failed to initialize sensors")
             throw e

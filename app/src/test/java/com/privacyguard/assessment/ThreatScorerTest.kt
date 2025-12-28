@@ -254,7 +254,8 @@ class ThreatScorerTest {
             contributions.cameraScore * contributions.cameraWeight +
             contributions.audioScore * contributions.audioWeight
         ) * 100
-        assertEquals(expectedScore.toInt().toLong(), finalScore.toLong(), 5L) // Tolérance de 5
+        assertTrue("Score should be within tolerance", 
+            kotlin.math.abs(expectedScore.toInt() - finalScore) <= 5) // Tolérance de 5
     }
     
     // ==================== Tests de confiance ====================

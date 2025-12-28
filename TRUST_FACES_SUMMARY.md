@@ -421,3 +421,4 @@ NEXT:
 **Version** : 1.5 - Trust Faces MVP  
 **Statut** : ✅ Compilé, ⏳ En attente de tests sur device
 
+

@@ -53,11 +53,17 @@ class ThreatAssessmentEngine(
      * @param sensorDataFlow Flow de SensorDataSnapshot du SensorManager
      * @return Flow d'évaluations de menace
      */
+    @OptIn(kotlinx.coroutines.FlowPreview::class)
     fun processFlow(sensorDataFlow: Flow<SensorDataSnapshot>): Flow<ThreatAssessment> {
         return sensorDataFlow
-            .debounce(500) // Anti-rebond 500ms pour réduire la fréquence
+            .sample(500) // Prendre un échantillon toutes les 500ms (au lieu de debounce qui attend le silence)
+            .onEach { snapshot ->
+                Timber.i("ThreatAssessmentEngine: Sampled snapshot - camera=${snapshot.cameraData != null}, audio=${snapshot.audioData != null}")
+            }
             .mapNotNull { snapshot ->
-                processSnapshot(snapshot)
+                val assessment = processSnapshot(snapshot)
+                Timber.d("ThreatAssessmentEngine: processSnapshot returned ${assessment != null}")
+                assessment
             }
             .scan(null as Pair<ThreatAssessment, Int>?) { prev, current ->
                 // Compteur de stabilité : si le niveau change, reset à 0

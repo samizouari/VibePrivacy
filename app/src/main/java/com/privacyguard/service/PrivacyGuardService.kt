@@ -277,9 +277,27 @@ class PrivacyGuardService : LifecycleService() {
                 // Collecter et analyser les données des capteurs
                 assessmentJob = launch {
                     Timber.i("PrivacyGuardService: Starting assessment collection...")
-                    sensorManager?.combinedSensorData?.let { sensorFlow ->
-                        Timber.i("PrivacyGuardService: Got sensor flow, processing...")
-                        threatAssessmentEngine?.processFlow(sensorFlow)?.collectLatest { assessment ->
+                    Timber.i("PrivacyGuardService: sensorManager=${sensorManager != null}, threatEngine=${threatAssessmentEngine != null}")
+                    
+                    if (sensorManager == null) {
+                        Timber.e("PrivacyGuardService: SensorManager is NULL! Cannot start assessment")
+                        return@launch
+                    }
+                    
+                    if (threatAssessmentEngine == null) {
+                        Timber.e("PrivacyGuardService: ThreatAssessmentEngine is NULL! Cannot start assessment")
+                        return@launch
+                    }
+                    
+                    val sensorFlow = sensorManager?.combinedSensorData
+                    Timber.i("PrivacyGuardService: Got sensor flow=${sensorFlow != null}, processing...")
+                    
+                    if (sensorFlow == null) {
+                        Timber.e("PrivacyGuardService: combinedSensorData is NULL!")
+                        return@launch
+                    }
+                    
+                    threatAssessmentEngine?.processFlow(sensorFlow)?.collectLatest { assessment ->
                             // Log de l'évaluation
                             Timber.i("PrivacyGuardService: RECEIVED assessment - Score=${assessment.threatScore}, " +
                                     "Level=${assessment.threatLevel}, " +
@@ -299,8 +317,7 @@ class PrivacyGuardService : LifecycleService() {
                             if (assessment.threatLevel.name in listOf("HIGH", "CRITICAL")) {
                                 captureIntruderPhoto(assessment.threatLevel.name)
                             }
-                        }
-                    } ?: Timber.e("PrivacyGuardService: combinedSensorData is null!")
+                        } ?: Timber.e("PrivacyGuardService: processFlow returned NULL!")
                 }
                 Timber.i("Threat assessment pipeline started")
                 

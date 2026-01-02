@@ -59,6 +59,12 @@ class PrivacyGuardService : LifecycleService() {
         const val ACTION_STOP_PROTECTION = "com.privacyguard.STOP_PROTECTION"
         const val ACTION_PAUSE_PROTECTION = "com.privacyguard.PAUSE_PROTECTION"
         
+        // Broadcast Actions
+        const val ACTION_THREAT_ASSESSMENT_UPDATE = "com.privacyguard.THREAT_ASSESSMENT_UPDATE"
+        const val EXTRA_THREAT_SCORE = "threat_score"
+        const val EXTRA_THREAT_LEVEL = "threat_level"
+        const val EXTRA_SHOULD_TRIGGER = "should_trigger"
+        
         // État du service
         private var isRunning = false
         
@@ -279,6 +285,9 @@ class PrivacyGuardService : LifecycleService() {
                                     "Level=${assessment.threatLevel}, " +
                                     "Camera=${(assessment.sensorContributions.cameraScore * 100).toInt()}%, " +
                                     "Audio=${(assessment.sensorContributions.audioScore * 100).toInt()}%")
+                            
+                            // Broadcaster le score à l'UI
+                            broadcastThreatAssessment(assessment)
                             
                             // Mettre à jour l'indicateur selon le niveau de menace
                             updateIndicatorFromAssessment(assessment)
@@ -569,6 +578,19 @@ class PrivacyGuardService : LifecycleService() {
             .setPriority(NotificationCompat.PRIORITY_LOW) // Priorité basse
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .build()
+    }
+    
+    /**
+     * Envoie un broadcast avec l'évaluation de menace pour l'UI
+     */
+    private fun broadcastThreatAssessment(assessment: ThreatAssessment) {
+        val intent = Intent(ACTION_THREAT_ASSESSMENT_UPDATE).apply {
+            putExtra(EXTRA_THREAT_SCORE, assessment.threatScore)
+            putExtra(EXTRA_THREAT_LEVEL, assessment.threatLevel.name)
+            putExtra(EXTRA_SHOULD_TRIGGER, assessment.shouldTriggerProtection)
+        }
+        sendBroadcast(intent)
+        Timber.v("PrivacyGuardService: Broadcasted assessment - Score=${assessment.threatScore}")
     }
 }
 

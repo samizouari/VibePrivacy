@@ -496,17 +496,37 @@ fun MainScreen() {
 fun ThreatScoreCard() {
     val context = LocalContext.current
     var threatScore by remember { mutableStateOf(0) }
-    var threatLevel by remember { mutableStateOf("SAFE") }
-    var activeSensors by remember { mutableStateOf(0) }
+    var threatLevel by remember { mutableStateOf("NONE") }
+    var shouldTrigger by remember { mutableStateOf(false) }
     
-    // Simuler la récupération du score depuis le service
-    // TODO: Implémenter un BroadcastReceiver ou StateFlow pour recevoir les vraies données
-    LaunchedEffect(Unit) {
-        while (true) {
-            // Pour l'instant, afficher des valeurs par défaut
-            // Le service envoie déjà les logs, on pourrait les exposer via un StateFlow
-            kotlinx.coroutines.delay(1000)
-            // threatScore et threatLevel seront mis à jour par le service
+    // Écouter les broadcasts du service
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        val receiver = object : android.content.BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent?.action == com.privacyguard.service.PrivacyGuardService.ACTION_THREAT_ASSESSMENT_UPDATE) {
+                    threatScore = intent.getIntExtra(
+                        com.privacyguard.service.PrivacyGuardService.EXTRA_THREAT_SCORE, 
+                        0
+                    )
+                    threatLevel = intent.getStringExtra(
+                        com.privacyguard.service.PrivacyGuardService.EXTRA_THREAT_LEVEL
+                    ) ?: "NONE"
+                    shouldTrigger = intent.getBooleanExtra(
+                        com.privacyguard.service.PrivacyGuardService.EXTRA_SHOULD_TRIGGER,
+                        false
+                    )
+                    Timber.d("ThreatScoreCard: Received update - Score=$threatScore, Level=$threatLevel")
+                }
+            }
+        }
+        
+        val filter = android.content.IntentFilter(
+            com.privacyguard.service.PrivacyGuardService.ACTION_THREAT_ASSESSMENT_UPDATE
+        )
+        context.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        
+        onDispose {
+            context.unregisterReceiver(receiver)
         }
     }
     

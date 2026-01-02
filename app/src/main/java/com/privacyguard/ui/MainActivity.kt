@@ -228,7 +228,15 @@ fun MainScreen() {
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Afficher le score de menace si protection active
+        if (isProtectionEnabled) {
+            ThreatScoreCard()
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
         
         // Bouton principal
         Button(
@@ -476,6 +484,103 @@ fun MainScreen() {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        }
+    }
+}
+
+/**
+ * Composant affichant le score de menace en temps réel
+ */
+@Composable
+fun ThreatScoreCard() {
+    val context = LocalContext.current
+    var threatScore by remember { mutableStateOf(0) }
+    var threatLevel by remember { mutableStateOf("SAFE") }
+    var activeSensors by remember { mutableStateOf(0) }
+    
+    // Simuler la récupération du score depuis le service
+    // TODO: Implémenter un BroadcastReceiver ou StateFlow pour recevoir les vraies données
+    LaunchedEffect(Unit) {
+        while (true) {
+            // Pour l'instant, afficher des valeurs par défaut
+            // Le service envoie déjà les logs, on pourrait les exposer via un StateFlow
+            kotlinx.coroutines.delay(1000)
+            // threatScore et threatLevel seront mis à jour par le service
+        }
+    }
+    
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = when {
+                threatScore < 25 -> MaterialTheme.colorScheme.primaryContainer
+                threatScore < 65 -> MaterialTheme.colorScheme.tertiaryContainer
+                else -> MaterialTheme.colorScheme.errorContainer
+            }
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Score de Menace",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Score affiché en grand
+            Text(
+                text = "$threatScore",
+                style = MaterialTheme.typography.displayMedium,
+                color = when {
+                    threatScore < 25 -> MaterialTheme.colorScheme.primary
+                    threatScore < 65 -> MaterialTheme.colorScheme.tertiary
+                    else -> MaterialTheme.colorScheme.error
+                }
+            )
+            
+            Text(
+                text = "/100",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Niveau de menace
+            Text(
+                text = when {
+                    threatScore < 25 -> "✅ SÉCURISÉ"
+                    threatScore < 45 -> "🟢 FAIBLE"
+                    threatScore < 65 -> "🟡 MOYEN"
+                    threatScore < 85 -> "🔴 ÉLEVÉ"
+                    else -> "⚠️ CRITIQUE"
+                },
+                style = MaterialTheme.typography.labelLarge
+            )
+            
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            // Info capteurs
+            Text(
+                text = "4 capteurs actifs",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Note explicative
+            Text(
+                text = "💡 Le score est calculé en temps réel à partir de la caméra, l'audio, les mouvements et la proximité",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

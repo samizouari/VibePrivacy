@@ -30,10 +30,12 @@ data class SensorWeights(
     val proximity: Float = 0.10f    // 10% - Objets proches
 ) {
     init {
-        // Vérifier que les poids totalisent 100%
+        // Vérifier que les poids totalisent 100% (sauf si tous à 0)
         val total = camera + audio + motion + proximity
-        require(total in 0.99f..1.01f) { 
-            "Les poids doivent totaliser 1.0, actuel: $total" 
+        if (total > 0f) {
+            require(total in 0.99f..1.01f) { 
+                "Les poids doivent totaliser 1.0, actuel: $total" 
+            }
         }
     }
     

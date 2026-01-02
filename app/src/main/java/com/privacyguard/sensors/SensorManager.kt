@@ -52,16 +52,20 @@ class SensorManager(
         _motionData,
         _proximityData
     ) { camera, audio, motion, proximity ->
-        // Log pour debug
-        Timber.v("SensorManager combine: camera=${camera != null}, audio=${audio != null}, motion=${motion != null}, proximity=${proximity != null}")
-        
-        SensorDataSnapshot(
+        val snapshot = SensorDataSnapshot(
             timestamp = System.currentTimeMillis(),
             cameraData = camera,
             audioData = audio,
             motionData = motion,
             proximityData = proximity
         )
+        
+        // Log détaillé pour debug
+        Timber.i("SensorManager COMBINE: camera=${camera != null} (faces=${camera?.facesDetected}), " +
+                "audio=${audio != null} (dB=${audio?.averageDecibels?.toInt()}), " +
+                "motion=${motion != null}, proximity=${proximity != null}")
+        
+        snapshot
     }
     
     private var sensorsJob: Job? = null

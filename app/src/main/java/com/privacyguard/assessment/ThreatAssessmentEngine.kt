@@ -55,7 +55,7 @@ class ThreatAssessmentEngine(
      */
     fun processFlow(sensorDataFlow: Flow<SensorDataSnapshot>): Flow<ThreatAssessment> {
         return sensorDataFlow
-            .debounce(100) // Anti-rebond 100ms - stabilité améliorée
+            .debounce(500) // Anti-rebond 500ms pour réduire la fréquence
             .mapNotNull { snapshot ->
                 processSnapshot(snapshot)
             }
@@ -64,26 +64,29 @@ class ThreatAssessmentEngine(
                 // Si le niveau reste stable, incrémenter
                 val sameLevel = prev?.first?.threatLevel == current.threatLevel
                 val stableCount = if (sameLevel) (prev?.second ?: 0) + 1 else 1
+                Timber.d("ThreatAssessmentEngine processFlow: level=${current.threatLevel}, stableCount=$stableCount")
                 Pair(current, stableCount)
             }
             .mapNotNull { pair ->
                 val (assessment, stableCount) = pair ?: return@mapNotNull null
                 
-                // FILTRE DE STABILITÉ : 
-                // - Changement vers NONE/LOW : nécessite 2 échantillons stables
-                // - Changement vers MEDIUM+ : nécessite 2 échantillons pour éviter faux positifs
+                // FILTRE DE STABILITÉ ASSOUPLI :
                 // - CRITICAL : immédiat (urgence)
+                // - MEDIUM/HIGH : nécessite 1 échantillon (réactivité)
+                // - NONE/LOW : nécessite 1 échantillon (toujours afficher)
                 when {
                     assessment.threatLevel == ThreatLevel.CRITICAL -> {
-                        // Critique : réagir immédiatement
+                        Timber.d("ThreatAssessmentEngine: Emitting CRITICAL immediately")
                         assessment
                     }
-                    stableCount >= 2 -> {
-                        // Niveau stable depuis 2+ lectures : émettre
+                    stableCount >= 1 -> {
+                        // Niveau stable depuis 1+ lecture : émettre
+                        Timber.d("ThreatAssessmentEngine: Emitting stable assessment (count=$stableCount)")
                         assessment
                     }
                     else -> {
-                        // Pas encore stable : ne pas émettre (attendre prochain échantillon)
+                        // Jamais atteint avec stableCount >= 1
+                        Timber.w("ThreatAssessmentEngine: Filtering unstable assessment")
                         null
                     }
                 }

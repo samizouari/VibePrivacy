@@ -294,3 +294,4 @@ Clic droit sur app/src/test/java/com/privacyguard/ -> Run 'Tests in 'privacyguar
 
 **Dernière mise à jour** : Jour 2 (14 novembre 2024)
 
+

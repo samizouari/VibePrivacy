@@ -338,6 +338,12 @@ class CameraSensor(
                 // Cropper le visage
                 val faceBitmap = cropFace(bitmap, face.boundingBox)
                 
+                // Si le crop a échoué (dimensions invalides), considérer comme inconnu
+                if (faceBitmap == null) {
+                    unknownCount++
+                    continue
+                }
+                
                 // Encoder le visage
                 val encoding = withContext(Dispatchers.IO) {
                     faceEncoder.encode(faceBitmap)
@@ -370,7 +376,7 @@ class CameraSensor(
     /**
      * Cropper un visage depuis le bitmap complet
      */
-    private fun cropFace(bitmap: Bitmap, boundingBox: Rect): Bitmap {
+    private fun cropFace(bitmap: Bitmap, boundingBox: Rect): Bitmap? {
         // Ajouter une marge de 20%
         val margin = (boundingBox.width() * 0.2f).toInt()
         
@@ -381,6 +387,12 @@ class CameraSensor(
         
         val width = right - left
         val height = bottom - top
+        
+        // Vérifier que les dimensions sont valides
+        if (width <= 0 || height <= 0) {
+            Timber.w("CameraSensor: Invalid crop dimensions (width=$width, height=$height), skipping face")
+            return null
+        }
         
         return Bitmap.createBitmap(bitmap, left, top, width, height)
     }

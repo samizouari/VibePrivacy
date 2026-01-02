@@ -189,3 +189,4 @@ Corriger CameraSensorTest en priorité (c'est notre code Jour 2), puis traiter l
 3. Viser 100% de réussite pour nos tests Jour 2
 4. Réviser tests Gemini au Jour 3 ou plus tard
 
+

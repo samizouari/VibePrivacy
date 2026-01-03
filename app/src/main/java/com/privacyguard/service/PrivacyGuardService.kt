@@ -16,6 +16,8 @@ import com.privacyguard.assessment.ThreatAssessmentEngine
 import com.privacyguard.assessment.models.ProtectionAction
 import com.privacyguard.assessment.models.ProtectionMode
 import com.privacyguard.assessment.models.ThreatAssessment
+import com.privacyguard.data.AppDatabase
+import com.privacyguard.data.SessionRepository
 import com.privacyguard.protection.IndicatorState
 import com.privacyguard.protection.IntruderCapture
 import com.privacyguard.protection.OverlayManager
@@ -65,6 +67,12 @@ class PrivacyGuardService : LifecycleService() {
         const val EXTRA_THREAT_LEVEL = "threat_level"
         const val EXTRA_SHOULD_TRIGGER = "should_trigger"
         
+        const val ACTION_SESSION_STATS_UPDATE = "com.privacyguard.SESSION_STATS_UPDATE"
+        const val EXTRA_SESSION_DURATION = "session_duration"
+        const val EXTRA_THREATS_DETECTED = "threats_detected"
+        const val EXTRA_AVG_SCORE = "avg_score"
+        const val EXTRA_CURRENT_MODE = "current_mode"
+        
         // État du service
         private var isRunning = false
         
@@ -107,6 +115,9 @@ class PrivacyGuardService : LifecycleService() {
     // Moteur d'évaluation des menaces
     private var threatAssessmentEngine: ThreatAssessmentEngine? = null
     
+    // Repository pour sauvegarder les sessions
+    private var sessionRepository: SessionRepository? = null
+    
     // Gestionnaire de zones de confiance
     private var trustZonesManager: TrustZonesManager? = null
     private var wifiDetector: WiFiZoneDetector? = null
@@ -129,6 +140,11 @@ class PrivacyGuardService : LifecycleService() {
         
         // Créer le canal de notification
         createNotificationChannel()
+        
+        // Initialiser la base de données et le repository
+        val database = AppDatabase.getInstance(applicationContext)
+        sessionRepository = SessionRepository(database.sessionDao())
+        Timber.d("PrivacyGuardService: SessionRepository initialized")
         
         // Ne pas initialiser les capteurs ici, attendre startProtection()
         // L'initialisation se fera dans startProtection() quand le service est vraiment prêt
@@ -251,10 +267,23 @@ class PrivacyGuardService : LifecycleService() {
                         ProtectionMode.DISCRETE
                     }
                     
-                    threatAssessmentEngine = ThreatAssessmentEngine().apply {
+                    threatAssessmentEngine = ThreatAssessmentEngine(
+                        sessionRepository = sessionRepository
+                    ).apply {
                         setProtectionMode(selectedMode)
+                        startSession() // Démarrer le tracking de la session
                     }
-                    Timber.i("ThreatAssessmentEngine initialized with ${selectedMode.name} mode (threshold=${selectedMode.threshold})")
+                    Timber.i("ThreatAssessmentEngine initialized with ${selectedMode.name} mode (threshold=${selectedMode.threshold}) and DB persistence")
+                }
+                
+                // Broadcaster les stats de session périodiquement
+                launch {
+                    while (isRunning) {
+                        threatAssessmentEngine?.getSessionStats()?.let { stats ->
+                            broadcastSessionStats(stats)
+                        }
+                        delay(2000) // Toutes les 2 secondes
+                    }
                 }
                 
                         // Initialiser la capture d'intrus
@@ -313,8 +342,10 @@ class PrivacyGuardService : LifecycleService() {
                             // Exécuter l'action de protection si nécessaire
                             protectionExecutor?.executeProtection(assessment)
                             
-                            // Capturer photo si menace haute
-                            if (assessment.threatLevel.name in listOf("HIGH", "CRITICAL")) {
+                            // Capturer photo selon la stratégie (2+ visages inconnus en BALANCED/PARANOIA)
+                            val plan = com.privacyguard.protection.ProtectionStrategy.determineProtectionAction(assessment)
+                            if (plan.shouldCapture) {
+                                Timber.w("📸 PrivacyGuardService: ${assessment.unknownFacesCount} unknown faces detected! Capturing intruder photo...")
                                 captureIntruderPhoto(assessment.threatLevel.name)
                             }
                         } ?: Timber.e("PrivacyGuardService: processFlow returned NULL!")
@@ -449,17 +480,24 @@ class PrivacyGuardService : LifecycleService() {
         isRunning = false
         isPaused = false
         
+        // Finaliser la session en DB
+        threatAssessmentEngine?.stopSession()
+        
         // Arrêter tous les capteurs
         lifecycleScope.launch {
             sensorManager?.stopAll()
         }
         
-        // TODO Jour 4: Retirer l'overlay
+        // Arrêter les zones de confiance
+        trustZonesManager?.stopMonitoring()
+        
+        // Retirer tous les overlays
+        overlayManager?.hideAllOverlays()
         
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
         
-        Timber.i("Privacy protection stopped")
+        Timber.i("Privacy protection stopped and session saved to DB")
     }
     
     /**
@@ -499,17 +537,30 @@ class PrivacyGuardService : LifecycleService() {
     private fun captureIntruderPhoto(threatLevel: String) {
         lifecycleScope.launch {
             try {
+                Timber.w("📸 captureIntruderPhoto: Starting capture for threat level $threatLevel")
+                
                 // Obtenir la dernière image de la caméra
                 val cameraSensor = sensorManager?.getCameraSensor()
-                val lastImage = cameraSensor?.getLastCapturedBitmap()
+                Timber.d("📸 captureIntruderPhoto: cameraSensor = ${cameraSensor != null}")
                 
-                if (lastImage != null) {
+                val lastImage = cameraSensor?.getLastCapturedBitmap()
+                Timber.d("📸 captureIntruderPhoto: lastImage = ${lastImage != null}, size = ${lastImage?.width}x${lastImage?.height}")
+                
+                if (lastImage != null && intruderCapture != null) {
+                    Timber.w("📸 captureIntruderPhoto: Calling captureFromBitmap...")
                     val photo = intruderCapture?.captureFromBitmap(lastImage, threatLevel)
                     if (photo != null) {
-                        Timber.i("📸 Intruder photo captured: ${photo.fileName}")
+                        Timber.i("📸 ✅ Intruder photo captured successfully: ${photo.fileName}")
+                    } else {
+                        Timber.e("📸 ❌ captureFromBitmap returned null!")
                     }
                 } else {
-                    Timber.d("No camera image available for intruder capture")
+                    if (lastImage == null) {
+                        Timber.e("📸 ❌ No camera image available for intruder capture")
+                    }
+                    if (intruderCapture == null) {
+                        Timber.e("📸 ❌ IntruderCapture is null!")
+                    }
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error capturing intruder photo")
@@ -608,6 +659,20 @@ class PrivacyGuardService : LifecycleService() {
         }
         sendBroadcast(intent)
         Timber.v("PrivacyGuardService: Broadcasted assessment - Score=${assessment.threatScore}")
+    }
+    
+    /**
+     * Envoie un broadcast avec les stats de session pour le Dashboard
+     */
+    private fun broadcastSessionStats(stats: com.privacyguard.assessment.SessionStats) {
+        val intent = Intent(ACTION_SESSION_STATS_UPDATE).apply {
+            putExtra(EXTRA_SESSION_DURATION, stats.sessionDurationMs)
+            putExtra(EXTRA_THREATS_DETECTED, stats.totalThreatsDetected)
+            putExtra(EXTRA_AVG_SCORE, stats.averageScore)
+            putExtra(EXTRA_CURRENT_MODE, stats.currentMode.name)
+        }
+        sendBroadcast(intent)
+        Timber.v("PrivacyGuardService: Broadcasted session stats - Duration=${stats.sessionDurationMs}ms, Threats=${stats.totalThreatsDetected}")
     }
 }
 

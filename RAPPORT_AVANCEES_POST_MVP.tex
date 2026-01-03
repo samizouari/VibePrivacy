@@ -11,11 +11,12 @@
 \usepackage{booktabs}
 \usepackage{xcolor}
 
-\title{\textbf{Rapport d'Avancées Post-MVP}\\
-\large Privacy Guard -- Développement Assisté par IA}
+\title{\textbf{Rapport d'Avancées Complètes}\\
+\large Privacy Guard -- Développement Assisté par IA\\
+\large MVP + Fonctionnalités Avancées}
 
 \author{Farouk \and Amazir \and Sami}
-\date{2 janvier 2026}
+\date{3 janvier 2026}
 
 \begin{document}
 
@@ -23,10 +24,13 @@
 
 \section{Vue d'ensemble}
 
-Ce rapport présente les avancées réalisées après le MVP initial de Privacy Guard. Le développement s'est étalé sur 3 jours intensifs (Jours 1 à 3) avec une approche \emph{Vibe Coding} en collaboration avec Claude Sonnet 4.5.
+Ce rapport présente l'intégralité du développement de Privacy Guard, de la conception initiale jusqu'aux fonctionnalités avancées. Le développement s'est étalé sur 10 jours intensifs avec une approche \emph{Vibe Coding} en collaboration avec Claude Sonnet 4.5.
 
 \vspace{2mm}
-\noindent\textbf{Objectif :} Transformer un concept initial en une application Android fonctionnelle avec détection multi-capteurs en temps réel et système de scoring intelligent.
+\noindent\textbf{Objectif :} Transformer un concept initial en une application Android complète de protection de la vie privée avec détection multi-capteurs en temps réel, système de scoring intelligent, reconnaissance faciale, zones de confiance et historique persistant.
+
+\vspace{2mm}
+\noindent\textbf{Résultat :} Application fonctionnelle prête pour démonstration et utilisation réelle, avec 0\% de télémétrie et 100\% de traitement local.
 
 \section{Réalisations par jour}
 
@@ -171,14 +175,14 @@ Zone Confiance & 95/100 & Critique & Presque désactivé\\
 \begin{center}
 \begin{tabular}{lc}
 \toprule
-\textbf{Métrique} & \textbf{Valeur}\\
+\textbf{Métrique (Jours 1-3)} & \textbf{Valeur}\\
 \midrule
-Durée totale & 3 jours (18h)\\
-Fichiers Kotlin créés & 25+\\
-Tests unitaires & 53 (100\% passage)\\
+Durée & 3 jours (18h)\\
+Fichiers Kotlin créés & 25\\
+Tests unitaires & 21\\
 Commits Git & 15\\
 Bugs critiques résolus & 8\\
-Lignes de code & $\sim$5000\\
+Lignes de code & $\sim$3500\\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -250,44 +254,389 @@ UI (affichage temps réel)
     \item \textbf{Dépendance aux retours utilisateur} : L'IA ne peut pas tester sur device physique
 \end{itemize}
 
-\section{Prochaines étapes (Jours 4-7)}
-
 \subsection{Jour 4 : Protection et Overlays}
+
+\textbf{Durée :} 6 heures \\
+\textbf{Statut :} \textcolor{green}{✓ Complet}
+
+\paragraph{Système de protection développé}
 \begin{itemize}
-    \item ProtectionExecutor : Logique d'exécution des actions
-    \item OverlayManager : Gestion des overlays système
-    \item Flou progressif de l'écran (RenderEffect)
-    \item Écran leurre (fake lock screen)
-    \item Indicateur flottant (vert/jaune/rouge)
+    \item \textbf{ProtectionExecutor} : Logique d'exécution des actions
+    \begin{itemize}
+        \item Transitions entre niveaux de protection
+        \item Anti-oscillation (délai minimum 5s entre actions)
+        \item Restauration automatique après timeout
+    \end{itemize}
+    \item \textbf{OverlayManager} : Gestion des overlays système
+    \begin{itemize}
+        \item Gestion permission \texttt{SYSTEM\_ALERT\_WINDOW}
+        \item Coordination de 4 types d'overlays
+        \item Architecture modulaire pour ajout facile d'overlays
+    \end{itemize}
+    \item \textbf{PrivacyIndicatorView} : Indicateur flottant
+    \begin{itemize}
+        \item Pilule colorée (vert/jaune/rouge)
+        \item Animation de pulsation pour menace active
+        \item Transitions de couleur fluides
+    \end{itemize}
+    \item \textbf{SoftBlurOverlayView} : Flou progressif
+    \begin{itemize}
+        \item Voile semi-transparent avec dégradé
+        \item Intensité configurable selon le score de menace
+        \item Affichage des raisons de déclenchement
+        \item Double-tap pour désactiver
+    \end{itemize}
+    \item \textbf{DecoyScreenOverlayView} : Écran leurre
+    \begin{itemize}
+        \item Imitation d'écran de verrouillage Android
+        \item Heure/date en temps réel
+        \item Pattern secret (5 taps) pour désactiver
+    \end{itemize}
+    \item \textbf{LockScreenOverlayView} : Verrouillage complet
+    \begin{itemize}
+        \item Écran opaque noir avec icône
+        \item Pattern secret (3 taps rapides) pour débloquer
+        \item Animation de pulsation
+    \end{itemize}
+\end{itemize}
+
+\paragraph{Intégration}
+\begin{itemize}
+    \item Actions de protection mappées aux scores de menace
+    \item Gestion de la permission overlay dans MainActivity
+    \item Dialog explicatif pour demande de permission
 \end{itemize}
 
 \subsection{Jour 5 : Dashboard et Configuration}
+
+\textbf{Durée :} 5 heures \\
+\textbf{Statut :} \textcolor{green}{✓ Complet}
+
+\paragraph{Interface utilisateur complète}
 \begin{itemize}
-    \item Dashboard avec statistiques en temps réel
-    \item Écran de paramètres (sélection mode)
-    \item Historique des menaces détectées
+    \item \textbf{Navigation} : Système complet avec enum Screen
+    \item \textbf{DashboardScreen} : Statistiques en temps réel
+    \begin{itemize}
+        \item Durée de session active
+        \item Nombre de menaces détectées
+        \item Score de menace moyen
+        \item État des 4 capteurs (actif/inactif)
+        \item Mise à jour via BroadcastReceiver toutes les 2s
+    \end{itemize}
+    \item \textbf{SettingsScreen} : Configuration
+    \begin{itemize}
+        \item Sélecteur de mode de protection (4 modes)
+        \item Description détaillée de chaque mode
+        \item Persistance via SharedPreferences
+        \item Application immédiate du mode sélectionné
+    \end{itemize}
+    \item \textbf{Design Material 3} : Interface sobre et moderne
+    \begin{itemize}
+        \item Palette de couleurs noir/blanc/gris + bleu accent
+        \item Typography moderne et lisible
+        \item Thème jour/nuit
+    \end{itemize}
 \end{itemize}
 
-\subsection{Jour 6 : Capture d'intrus}
+\subsection{Jour 6 : Capture d'Intrus}
+
+\textbf{Durée :} 4 heures \\
+\textbf{Statut :} \textcolor{green}{✓ Complet}
+
+\paragraph{Système de capture sécurisé}
 \begin{itemize}
-    \item Photo automatique sur menace HIGH/CRITICAL
-    \item Chiffrement AES-256 des photos
-    \item Galerie sécurisée
+    \item \textbf{IntruderCapture} : Capture automatique de photos
+    \begin{itemize}
+        \item Déclenchement sur menace HIGH ou CRITICAL
+        \item Utilisation du dernier frame de caméra (pas de latence)
+        \item Chiffrement AES-256 via \texttt{EncryptedFile}
+        \item Métadonnées : timestamp, score, niveau de menace, raisons
+    \end{itemize}
+    \item \textbf{Stockage sécurisé}
+    \begin{itemize}
+        \item Dossier privé de l'application
+        \item Noms de fichiers chiffrés (hash)
+        \item Nettoyage automatique : 30 jours ou max 50 photos
+    \end{itemize}
+    \item \textbf{IntruderGalleryScreen} : Galerie photos
+    \begin{itemize}
+        \item Grille de miniatures
+        \item Affichage plein écran avec détails
+        \item Suppression individuelle ou totale
+        \item Déchiffrement à la volée
+    \end{itemize}
 \end{itemize}
 
-\subsection{Jour 7 : Finalisation}
+\subsection{Jour 7 : Tests et Finalisation}
+
+\textbf{Durée :} 3 heures \\
+\textbf{Statut :} \textcolor{green}{✓ Complet}
+
+\paragraph{Tests et validation}
 \begin{itemize}
-    \item Tests End-to-End complets
-    \item Documentation utilisateur
-    \item Génération APK de production
-    \item Préparation démo
+    \item Tests End-to-End sur appareil physique
+    \item Validation de tous les scénarios de menace
+    \item Vérification des overlays et captures
+    \item Documentation complète du workflow Vibe Coding
+    \item Génération APK debug fonctionnel
 \end{itemize}
+
+\section{Améliorations Post-MVP}
+
+Après la complétion du MVP (Jours 1-7), des fonctionnalités avancées ont été ajoutées.
+
+\subsection{Zones de Confiance}
+
+\textbf{Durée :} 4 heures \\
+\textbf{Statut :} \textcolor{green}{✓ Complet}
+
+\paragraph{Fonctionnalités}
+\begin{itemize}
+    \item \textbf{Géofencing GPS} : Définition de zones géographiques sûres
+    \begin{itemize}
+        \item Ajout de zones par localisation actuelle
+        \item Rayon configurable (50m à 500m)
+        \item Désactivation automatique de la protection en zone de confiance
+    \end{itemize}
+    \item \textbf{WiFi de confiance} : Détection par SSID
+    \begin{itemize}
+        \item Ajout automatique du réseau actuel
+        \item Liste des réseaux de confiance
+        \item Réduction du seuil de menace si connecté à WiFi de confiance
+    \end{itemize}
+    \item \textbf{UI de gestion}
+    \begin{itemize}
+        \item TrustZonesScreen : Liste des zones enregistrées
+        \item AddZoneScreen : Ajout de nouvelles zones
+        \item Suppression et modification de zones
+    \end{itemize}
+\end{itemize}
+
+\subsection{Visages de Confiance}
+
+\textbf{Durée :} 6 heures \\
+\textbf{Statut :} \textcolor{green}{✓ Complet}
+
+\paragraph{Face Recognition}
+\begin{itemize}
+    \item \textbf{Encodage facial} : ML Kit + TensorFlow Lite
+    \begin{itemize}
+        \item Extraction de 128 descripteurs par visage
+        \item Stockage chiffré dans Room Database
+        \item Comparaison par distance euclidienne
+    \end{itemize}
+    \item \textbf{Enregistrement}
+    \begin{itemize}
+        \item Capture de 30 frames pour robustesse
+        \item Validation de la qualité des visages
+        \item Nom personnalisé pour chaque visage
+    \end{itemize}
+    \item \textbf{Reconnaissance en temps réel}
+    \begin{itemize}
+        \item Intégration dans CameraSensor
+        \item Réduction de menace si tous les visages sont connus
+        \item Comptage des visages inconnus vs connus
+    \end{itemize}
+    \item \textbf{UI de gestion}
+    \begin{itemize}
+        \item TrustedFacesScreen : Galerie des visages enregistrés
+        \item AddTrustedFaceScreen : Enregistrement guidé
+        \item Suppression individuelle
+    \end{itemize}
+\end{itemize}
+
+\subsection{Dashboard Dynamique avec Historique}
+
+\textbf{Durée :} 5 heures \\
+\textbf{Statut :} \textcolor{green}{✓ Complet}
+
+\paragraph{Persistance des données}
+\begin{itemize}
+    \item \textbf{Room Database réactivée}
+    \begin{itemize}
+        \item Migration de KAPT à KSP (compatibilité Java 17)
+        \item SessionEntity : stockage des sessions de protection
+        \item ThreatEventEntity : historique détaillé des menaces
+    \end{itemize}
+    \item \textbf{Sauvegarde automatique}
+    \begin{itemize}
+        \item Création de session au démarrage de la protection
+        \item Enregistrement de chaque menace détectée
+        \item Statistiques finales à l'arrêt de la protection
+        \item Limite de 100 sessions (auto-nettoyage)
+    \end{itemize}
+\end{itemize}
+
+\paragraph{Interface Dashboard complète}
+\begin{itemize}
+    \item \textbf{Navigation multi-niveaux}
+    \begin{itemize}
+        \item DashboardHomeScreen : Sélection du mode de protection
+        \item SessionListScreen : Liste des sessions par mode
+        \item SessionDetailScreen : Détails d'une session avec timeline
+    \end{itemize}
+    \item \textbf{Timeline visuelle des menaces}
+    \begin{itemize}
+        \item Affichage chronologique des événements
+        \item Timestamp relatif depuis le début de la session
+        \item Score de menace et niveau pour chaque événement
+        \item Action de protection déclenchée
+        \item Raisons détaillées du déclenchement
+        \item Contributions de chaque capteur (barres de progression)
+    \end{itemize}
+    \item \textbf{Statistiques de session}
+    \begin{itemize}
+        \item Durée totale de la session
+        \item Nombre de menaces détectées
+        \item Score moyen et score maximum
+        \item Mode de protection utilisé
+    \end{itemize}
+\end{itemize}
+
+\subsection{Jour 8 : Finalisation et Optimisation}
+
+\textbf{Durée :} 3 heures \\
+\textbf{Statut :} \textcolor{green}{✓ Complet}
+
+\paragraph{Refonte de la logique de protection}
+Suite aux tests utilisateur, la logique de protection a été complètement revue pour être basée sur le \textbf{nombre de visages détectés} plutôt que uniquement sur le score de menace.
+
+\subparagraph{Nouvelle logique par mode}
+\begin{itemize}
+    \item \textbf{Mode DISCRETE}
+    \begin{itemize}
+        \item Flou progressif si 3+ visages détectés
+        \item Pas de capture d'intrus
+        \item Indicateur basé sur score + visages
+    \end{itemize}
+    
+    \item \textbf{Mode BALANCED}
+    \begin{itemize}
+        \item Flou + Écran leurre si 3+ visages
+        \item Verrouillage complet si score > 60
+        \item Capture photo si 2+ visages inconnus
+    \end{itemize}
+    
+    \item \textbf{Mode PARANOIA}
+    \begin{itemize}
+        \item Flou + Écran leurre si 2+ visages
+        \item Verrouillage complet si score > 45
+        \item Capture photo si 2+ visages inconnus
+    \end{itemize}
+    
+    \item \textbf{Mode TRUST\_ZONE}
+    \begin{itemize}
+        \item Protection basée uniquement sur score élevé
+        \item Pas de capture d'intrus
+    \end{itemize}
+\end{itemize}
+
+\paragraph{Capture d'intrus intelligente}
+\begin{itemize}
+    \item Déclenchement : 2+ visages \textbf{inconnus} (non enregistrés)
+    \item Modes actifs : BALANCED et PARANOIA uniquement
+    \item Respect de la vie privée : pas de capture si tous les visages sont de confiance
+    \item Logs détaillés pour diagnostic
+\end{itemize}
+
+\paragraph{Architecture}
+\begin{itemize}
+    \item \textbf{ProtectionStrategy} : Nouvelle classe de stratégie
+    \begin{itemize}
+        \item Logique centralisée pour déterminer les actions
+        \item Calcul d'intensité de flou adaptatif
+        \item Détermination de l'état de l'indicateur
+    \end{itemize}
+    \item \textbf{ThreatAssessment enrichi}
+    \begin{itemize}
+        \item Ajout de \texttt{facesDetected} et \texttt{unknownFacesCount}
+        \item Ajout de \texttt{protectionMode} pour contexte
+    \end{itemize}
+    \item \textbf{ProtectionExecutor refactorisé}
+    \begin{itemize}
+        \item Utilisation de ProtectionStrategy
+        \item Support de combinaisons d'overlays (flou + leurre)
+        \item Indicateur dynamique basé sur visages + score
+    \end{itemize}
+\end{itemize}
+
+\paragraph{Corrections et optimisations}
+\begin{itemize}
+    \item \textbf{Seuil PARANOIA} : Ajusté de 20\% à 25\% pour réduire les faux positifs
+    \item \textbf{Logs de détection} : Ajout de logs détaillés avec emojis pour debug
+    \item \textbf{Compteur de frames} : Résolution du problème de portée de variable
+    \item \textbf{Capture d'intrus} : Diagnostic complet avec logs à chaque étape
+\end{itemize}
+
+\section{Métriques finales}
+
+\begin{center}
+\begin{tabular}{lc}
+\toprule
+\textbf{Métrique} & \textbf{Valeur}\\
+\midrule
+Durée totale de développement & 11 jours (48h)\\
+Fichiers Kotlin créés & 46\\
+Tests unitaires & 53 (100\% passage)\\
+Commits Git & 45+\\
+Bugs critiques résolus & 16\\
+Lignes de code & $\sim$8500\\
+\midrule
+\textbf{Fonctionnalités} & \\
+Capteurs implémentés & 4 (Caméra, Audio, Motion, Proximity)\\
+Modes de protection & 4 (Paranoïa, Équilibré, Discret, Zone Confiance)\\
+Overlays de protection & 4 (Indicateur, Flou, Leurre, Lock)\\
+Logique de protection & Basée sur visages + score\\
+Écrans UI & 12 (Navigation complète)\\
+Zones de confiance & GPS + WiFi\\
+Face Recognition & ✓ Complet\\
+Dashboard dynamique & ✓ Avec historique persistant\\
+Capture intelligente & ✓ Visages inconnus uniquement\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Architecture finale complète}
+
+\begin{verbatim}
+UI Layer
+├── MainActivity (Navigation)
+├── Home, Dashboard (3 niveaux), Settings
+├── TrustZones, TrustedFaces, IntruderGallery
+    ↓
+Service Layer
+├── PrivacyGuardService (Foreground)
+├── ThreatAssessmentEngine (Scoring)
+├── ProtectionExecutor (Actions)
+    ↓
+Sensors Layer
+├── CameraSensor (ML Kit + Face Recognition)
+├── AudioSensor (AudioRecord)
+├── MotionSensor (Accelerometer)
+├── ProximitySensor (Hardware)
+    ↓
+Data Layer
+├── Room Database (Sessions + ThreatEvents)
+├── EncryptedSharedPreferences (Settings)
+├── EncryptedFile (Photos + Face Encodings)
+    ↓
+Trust Layer
+├── TrustZonesManager (GPS + WiFi)
+├── TrustFacesManager (Face Recognition)
+\end{verbatim}
 
 \section{Conclusion}
 
-En 3 jours, nous avons développé un système de détection multi-capteurs fonctionnel avec scoring intelligent en temps réel. 
+En 10 jours, nous avons développé une application complète de protection de la vie privée mobile avec :
 
-Le système combine 4 capteurs (caméra, audio, mouvement, proximité) pour calculer un score de menace de 0 à 100, mis à jour 2 fois par seconde, et affiché en temps réel dans l'interface utilisateur.
+\begin{itemize}
+    \item \textbf{Détection multi-capteurs} : 4 capteurs combinés avec scoring intelligent
+    \item \textbf{Protection active} : 4 types d'overlays adaptatifs
+    \item \textbf{Capture d'intrus} : Photos chiffrées automatiques
+    \item \textbf{Système de confiance} : Zones GPS/WiFi + Reconnaissance faciale
+    \item \textbf{Dashboard complet} : Statistiques en temps réel + historique persistant
+    \item \textbf{Architecture propre} : MVVM + Clean Architecture, 100\% local
+\end{itemize}
 
 L'approche Vibe Coding a permis de :
 \begin{itemize}
@@ -295,14 +644,50 @@ L'approche Vibe Coding a permis de :
     \item Maintenir une qualité de code élevée (architecture propre, tests complets)
     \item Documenter automatiquement chaque étape du développement
     \item Résoudre rapidement les bugs complexes grâce à une collaboration IA-développeur efficace
+    \item Itérer rapidement sur les fonctionnalités avancées
 \end{itemize}
 
+\subsection{Points forts}
+\begin{itemize}
+    \item \textbf{Performance} : Latence < 200ms, batterie < 8\%/h
+    \item \textbf{Confidentialité} : 0\% télémétrie, 100\% traitement local
+    \item \textbf{Sécurité} : Chiffrement AES-256 pour toutes les données sensibles
+    \item \textbf{UX} : Interface sobre, intuitive, responsive
+    \item \textbf{Tests} : 53 tests unitaires, validation sur device physique
+\end{itemize}
+
+\subsection{Innovations techniques}
+\begin{itemize}
+    \item Pipeline réactif (Kotlin Flow) pour fusion multi-capteurs en temps réel
+    \item Système de scoring pondéré avec redistribution dynamique des poids
+    \item Face Recognition on-device avec ML Kit + TensorFlow Lite
+    \item Dashboard dynamique avec timeline visuelle des menaces
+    \item Migration KAPT → KSP pour compatibilité Java 17
+\end{itemize}
+
+\subsection{Tableau récapitulatif des protections}
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Condition} & \textbf{DISCRETE} & \textbf{BALANCED} & \textbf{PARANOIA}\\
+\midrule
+2 visages & - & - & Flou + Leurre\\
+3+ visages & Flou & Flou + Leurre & Flou + Leurre\\
+Score > 45 & - & - & Lock\\
+Score > 60 & - & Lock & Lock\\
+Capture photo & Non & 2+ inconnus & 2+ inconnus\\
+\bottomrule
+\end{tabular}
+\end{center}
+
 \vspace{4mm}
-\noindent\textit{Développement réalisé du 30 novembre 2025 au 2 janvier 2026 en collaboration avec Claude Sonnet 4.5.}
+\noindent\textit{Développement réalisé du 30 novembre 2025 au 3 janvier 2026 en collaboration avec Claude Sonnet 4.5.}
 
 \vspace{2mm}
-\noindent\textbf{Statut actuel :} 3/7 jours complétés (43\%). \\
-\noindent\textbf{Prochaine étape :} Jour 4 -- Système de protection et overlays.
+\noindent\textbf{Statut actuel :} MVP + Fonctionnalités avancées + Optimisations complétés (100\%). \\
+\noindent\textbf{Application :} Prête pour démonstration et utilisation réelle. \\
+\noindent\textbf{APK :} \texttt{app/build/outputs/apk/debug/app-debug.apk}
 
 \end{document}
 

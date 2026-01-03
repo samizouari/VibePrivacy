@@ -53,13 +53,17 @@ class ProtectionExecutor(
     
     /**
      * Exécute l'action de protection appropriée
+     * Jour 8 : Logique basée sur nombre de visages + score
      */
     suspend fun executeProtection(assessment: ThreatAssessment) {
-        val recommendedAction = assessment.recommendedAction
+        // Utiliser la nouvelle stratégie basée sur visages + score
+        val plan = ProtectionStrategy.determineProtectionAction(assessment)
+        
+        Timber.i("ProtectionExecutor: Plan -> action=${plan.mainAction}, blur=${plan.shouldBlur}, decoy=${plan.shouldDecoy}, lock=${plan.shouldLock}")
         
         // Vérifier le délai minimum entre actions
         val now = System.currentTimeMillis()
-        if (now - lastActionTime < minActionInterval && recommendedAction != ProtectionAction.NONE) {
+        if (now - lastActionTime < minActionInterval && plan.mainAction != ProtectionAction.NONE) {
             Timber.d("ProtectionExecutor: Skipping action (too soon)")
             return
         }
@@ -67,41 +71,45 @@ class ProtectionExecutor(
         // Ajouter à l'historique
         addToHistory(assessment)
         
-        // Si l'action est la même, ne rien faire
-        if (recommendedAction == _currentProtection.value) {
-            return
-        }
+        // Mettre à jour l'indicateur basé sur la stratégie
+        val indicatorState = ProtectionStrategy.determineIndicatorState(assessment)
+        overlayManager.updateIndicator(indicatorState)
         
-        // Exécuter l'action
-        when (recommendedAction) {
-            ProtectionAction.NONE -> {
-                deactivateProtection()
-            }
-            ProtectionAction.SOFT_BLUR -> {
-                activateSoftBlur(assessment)
-            }
-            ProtectionAction.DECOY_SCREEN -> {
-                activateDecoyScreen(assessment)
-            }
-            ProtectionAction.INSTANT_LOCK -> {
+        // Activer les overlays selon le plan
+        when {
+            plan.shouldLock -> {
+                // Verrouillage complet (priorité max)
                 activateInstantLock(assessment)
+                _currentProtection.value = ProtectionAction.INSTANT_LOCK
             }
-            ProtectionAction.PANIC_MODE -> {
-                activatePanicMode(assessment)
+            plan.shouldDecoy && plan.shouldBlur -> {
+                // Écran leurre + Flou
+                activateDecoyScreen(assessment)
+                overlayManager.showBlurOverlay(plan.blurIntensity, assessment.triggerReasons)
+                _currentProtection.value = ProtectionAction.DECOY_SCREEN
+            }
+            plan.shouldBlur -> {
+                // Flou uniquement
+                activateSoftBlur(assessment, plan.blurIntensity)
+                _currentProtection.value = ProtectionAction.SOFT_BLUR
+            }
+            else -> {
+                // Désactiver tout sauf l'indicateur
+                deactivateProtection()
+                _currentProtection.value = ProtectionAction.NONE
             }
         }
         
-        _currentProtection.value = recommendedAction
         lastActionTime = now
         
-        Timber.i("ProtectionExecutor: Protection changed to $recommendedAction")
+        Timber.i("ProtectionExecutor: Protection executed -> ${_currentProtection.value}")
     }
     
     /**
      * Active le flou doux progressif
      */
-    private suspend fun activateSoftBlur(assessment: ThreatAssessment) {
-        Timber.i("ProtectionExecutor: Activating SOFT_BLUR")
+    private suspend fun activateSoftBlur(assessment: ThreatAssessment, intensity: Float = 0.5f) {
+        Timber.i("ProtectionExecutor: Activating SOFT_BLUR with intensity $intensity")
         
         // Annuler la restauration automatique précédente
         autoRestoreJob?.cancel()
@@ -109,7 +117,7 @@ class ProtectionExecutor(
         // Afficher l'overlay de flou
         withContext(Dispatchers.Main) {
             overlayManager.showBlurOverlay(
-                intensity = calculateBlurIntensity(assessment.threatScore),
+                intensity = intensity,
                 reasons = assessment.triggerReasons
             )
         }

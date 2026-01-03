@@ -14,7 +14,7 @@ import com.privacyguard.sensors.ThreatLevel
  * Chaque mode a un seuil de déclenchement différent
  */
 enum class ProtectionMode(val threshold: Int, val description: String) {
-    PARANOIA(20, "Très sensible - Moindre mouvement détecté"),
+    PARANOIA(25, "Très sensible - Moindre mouvement détecté"),
     BALANCED(50, "Équilibré - Protection raisonnable"),
     DISCRETE(75, "Discret - Uniquement menaces directes"),
     TRUST_ZONE(95, "Zone de confiance - Presque désactivé")
@@ -80,7 +80,11 @@ data class ThreatAssessment(
     val shouldTriggerProtection: Boolean,
     val recommendedAction: ProtectionAction,
     val triggerReasons: List<String>,
-    val sensorContributions: SensorContributions
+    val sensorContributions: SensorContributions,
+    // Données capteurs pour logique de protection
+    val facesDetected: Int = 0,
+    val unknownFacesCount: Int = 0,
+    val protectionMode: ProtectionMode = ProtectionMode.DISCRETE
 )
 
 /**

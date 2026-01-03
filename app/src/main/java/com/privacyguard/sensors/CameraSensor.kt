@@ -65,6 +65,7 @@ class CameraSensor(
     // Configuration
     private val minAnalysisIntervalMs = 200L // Analyse toutes les 200ms (5 FPS) - Plus réactif
     private var lastAnalysisTime = 0L
+    private var frameCount = 0 // Compteur de frames pour debug
     
     // Dernière image capturée pour la capture d'intrus
     private var lastCapturedBitmap: Bitmap? = null
@@ -140,8 +141,8 @@ class CameraSensor(
         // Caméra frontale pour détecter les personnes regardant l'écran
         val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
         
-        // Compteur de frames pour debug
-        var frameCount = 0
+        // Réinitialiser le compteur de frames
+        frameCount = 0
         
         // ImageAnalysis pour ML Kit
         imageAnalysis = ImageAnalysis.Builder()
@@ -212,11 +213,17 @@ class CameraSensor(
         // Détection de visages avec ML Kit
         faceDetector.process(image)
             .addOnSuccessListener { faces ->
-                Timber.i("CameraSensor: ML Kit SUCCESS - ${faces.size} face(s) detected")
+                Timber.w("CameraSensor: ✅ ML Kit SUCCESS - ${faces.size} face(s) detected (frame #$frameCount)")
+                if (faces.isNotEmpty()) {
+                    Timber.w("CameraSensor: 🔴 ATTENTION - ${faces.size} VISAGE(S) DÉTECTÉ(S)!")
+                    faces.forEachIndexed { index, face ->
+                        Timber.w("  Face #$index: bounds=${face.boundingBox}, eulerY=${face.headEulerAngleY}, eulerZ=${face.headEulerAngleZ}")
+                    }
+                }
                 handleFaceDetection(faces, currentTime)
             }
             .addOnFailureListener { e ->
-                Timber.e(e, "CameraSensor: ML Kit FAILED - ${e.message}")
+                Timber.e(e, "CameraSensor: ❌ ML Kit FAILED - ${e.message}")
                 // Émettre des données même en cas d'erreur pour que camera != null
                 val errorData = CameraData(
                         timestamp = currentTime,
@@ -239,9 +246,11 @@ class CameraSensor(
      */
     private fun handleFaceDetection(faces: List<Face>, timestamp: Long) {
         val facesCount = faces.size
+        Timber.w("CameraSensor: handleFaceDetection called with ${facesCount} face(s)")
         
         if (facesCount == 0) {
             // Aucun visage détecté = aucune menace
+            Timber.d("CameraSensor: No faces, emitting NONE threat level")
             emitData(
                 CameraData(
                     timestamp = timestamp,
@@ -254,6 +263,8 @@ class CameraSensor(
             )
             return
         }
+        
+        Timber.w("CameraSensor: 🚨 Processing ${facesCount} detected face(s)...")
         
         // Analyser chaque visage
         var facesLookingAtScreen = 0
@@ -298,17 +309,17 @@ class CameraSensor(
                         ).first
                     }
                     
-                    emitData(
-                        CameraData(
-                            timestamp = timestamp,
-                            threatLevel = adjustedThreatLevel,
-                            confidence = 0.9f,
-                            facesDetected = facesCount,
-                            facesLookingAtScreen = facesLookingAtScreen,
-                            unknownFacesCount = unknownCount,
-                            distanceToCamera = null
-                        )
+                    val cameraData = CameraData(
+                        timestamp = timestamp,
+                        threatLevel = adjustedThreatLevel,
+                        confidence = 0.9f,
+                        facesDetected = facesCount,
+                        facesLookingAtScreen = facesLookingAtScreen,
+                        unknownFacesCount = unknownCount,
+                        distanceToCamera = null
                     )
+                    Timber.w("CameraSensor: 📤 EMITTING DATA - Threat=${adjustedThreatLevel}, Faces=$facesCount, Unknown=$unknownCount, Looking=$facesLookingAtScreen")
+                    emitData(cameraData)
                 } catch (e: Exception) {
                     Timber.e(e, "CameraSensor: Error in face recognition")
                     // Fallback sur l'évaluation normale

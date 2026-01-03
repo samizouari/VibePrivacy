@@ -28,7 +28,9 @@ import com.privacyguard.R
 import com.privacyguard.assessment.models.ProtectionMode
 import com.privacyguard.ui.screens.AddZoneScreen
 import com.privacyguard.ui.screens.AddTrustedFaceScreen
-import com.privacyguard.ui.screens.DashboardScreen
+import com.privacyguard.ui.screens.DashboardHomeScreen
+import com.privacyguard.ui.screens.SessionListScreen
+import com.privacyguard.ui.screens.SessionDetailScreen
 import com.privacyguard.ui.screens.IntruderGalleryScreen
 import com.privacyguard.ui.screens.SettingsScreen
 import com.privacyguard.ui.screens.TrustZonesScreen
@@ -43,7 +45,9 @@ import timber.log.Timber
 enum class Screen {
     HOME,
     SETTINGS,
-    DASHBOARD,
+    DASHBOARD_HOME,
+    SESSION_LIST,
+    SESSION_DETAIL,
     INTRUDER_GALLERY,
     TRUST_ZONES,
     ADD_ZONE,
@@ -85,6 +89,10 @@ fun MainScreen() {
     var showOverlayDialog by remember { mutableStateOf(false) }
     var currentScreen by remember { mutableStateOf(Screen.HOME) }
     
+    // Paramètres de navigation pour le Dashboard
+    var selectedMode by remember { mutableStateOf<ProtectionMode?>(null) }
+    var selectedSessionId by remember { mutableStateOf<Long?>(null) }
+    
     // Charger le mode depuis les préférences
     val prefs = remember { context.getSharedPreferences("privacy_guard_prefs", Context.MODE_PRIVATE) }
     var currentMode by remember {
@@ -121,11 +129,42 @@ fun MainScreen() {
             )
             return
         }
-        Screen.DASHBOARD -> {
-            DashboardScreen(
+        Screen.DASHBOARD_HOME -> {
+            DashboardHomeScreen(
                 onBackClick = { currentScreen = Screen.HOME },
-                isProtectionActive = isProtectionEnabled
+                onModeSelected = { mode ->
+                    selectedMode = mode
+                    currentScreen = Screen.SESSION_LIST
+                }
             )
+            return
+        }
+        Screen.SESSION_LIST -> {
+            selectedMode?.let { mode ->
+                SessionListScreen(
+                    mode = mode,
+                    onBackClick = { currentScreen = Screen.DASHBOARD_HOME },
+                    onSessionClick = { sessionId ->
+                        selectedSessionId = sessionId
+                        currentScreen = Screen.SESSION_DETAIL
+                    }
+                )
+            } ?: run {
+                // Fallback si le mode n'est pas défini
+                currentScreen = Screen.DASHBOARD_HOME
+            }
+            return
+        }
+        Screen.SESSION_DETAIL -> {
+            selectedSessionId?.let { sessionId ->
+                SessionDetailScreen(
+                    sessionId = sessionId,
+                    onBackClick = { currentScreen = Screen.SESSION_LIST }
+                )
+            } ?: run {
+                // Fallback si la session n'est pas définie
+                currentScreen = Screen.SESSION_LIST
+            }
             return
         }
         Screen.TRUST_ZONES -> {
@@ -351,7 +390,7 @@ fun MainScreen() {
             
             // Bouton Dashboard
             OutlinedButton(
-                onClick = { currentScreen = Screen.DASHBOARD },
+                onClick = { currentScreen = Screen.DASHBOARD_HOME },
                 modifier = Modifier.weight(1f)
             ) {
                 Text("📊 Dashboard")

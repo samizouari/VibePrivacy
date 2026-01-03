@@ -1,9 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    // TODO: Réactiver KAPT et Hilt au Jour 2 quand on implémente les capteurs
-    // id("kotlin-kapt")
-    // id("com.google.dagger.hilt.android")
+    id("com.google.devtools.ksp") version "1.9.10-1.0.13" // KSP pour Room (plus moderne que KAPT)
     id("kotlin-parcelize")
 }
 
@@ -64,24 +62,10 @@ android {
     }
 }
 
-// Configuration KAPT pour compatibilité Java 17+ (désactivée temporairement)
-// TODO: Réactiver au Jour 2
-/*
-kapt {
-    javacOptions {
-        option("--add-opens", "jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED")
-        option("--add-opens", "jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED")
-        option("--add-opens", "jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED")
-        option("--add-opens", "jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED")
-        option("--add-opens", "jdk.compiler/com.sun.tools.javac.jvm=ALL-UNNAMED")
-        option("--add-opens", "jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED")
-        option("--add-opens", "jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED")
-        option("--add-opens", "jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED")
-        option("--add-opens", "jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED")
-        option("--add-opens", "jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED")
-    }
+// Configuration KSP pour Room Database
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
-*/
 
 dependencies {
     // Kotlin
@@ -116,11 +100,10 @@ dependencies {
     // ML Kit Face Detection
     implementation(libs.google.mlkit.face.detection)
     
-    // Room Database (désactivé temporairement - pas besoin pour MVP Jour 1)
-    // TODO: Réactiver au Jour 2
-    // implementation(libs.androidx.room.runtime)
-    // implementation(libs.androidx.room.ktx)
-    // kapt(libs.androidx.room.compiler)
+    // Room Database (réactivé pour Day 5 - historique des sessions avec KSP)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
     
     // Hilt Dependency Injection (désactivé temporairement - pas besoin pour MVP Jour 1)
     // TODO: Réactiver au Jour 2

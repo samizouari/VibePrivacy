@@ -1,6 +1,7 @@
 package com.privacyguard.assessment
 
 import com.privacyguard.assessment.models.*
+import com.privacyguard.data.SessionRepository
 import com.privacyguard.sensors.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -14,6 +15,7 @@ import timber.log.Timber
  * - Gérer le pipeline d'évaluation en temps réel
  * - Émettre les évaluations via Flow
  * - Gérer le debounce et le filtrage
+ * - Sauvegarder les sessions et événements de menace
  * 
  * Architecture :
  * ```
@@ -28,7 +30,8 @@ import timber.log.Timber
  */
 class ThreatAssessmentEngine(
     private val sensorDataFusion: SensorDataFusion = SensorDataFusion(),
-    private val config: ThreatAssessmentConfig = ThreatAssessmentConfig()
+    private val config: ThreatAssessmentConfig = ThreatAssessmentConfig(),
+    private val sessionRepository: SessionRepository? = null // Optionnel pour les tests
 ) {
     
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
@@ -46,6 +49,16 @@ class ThreatAssessmentEngine(
     
     // Timestamp du dernier déclenchement (pour debounce)
     private var lastTriggerTime: Long = 0
+    
+    // === TRACKING SESSION ===
+    private var sessionStartTime: Long = 0
+    private var currentSessionId: Long? = null // ID de la session en cours dans la DB
+    private var totalThreatsDetected: Int = 0
+    private var totalThreatScore: Float = 0f
+    private var totalAssessments: Int = 0
+    private var maxThreatScore: Float = 0f
+    private var maxThreatLevel: ThreatLevel = ThreatLevel.NONE
+    private val threatEvents = mutableListOf<ThreatEvent>()
     
     /**
      * Traite un flux de données de capteurs et émet des évaluations de menace
@@ -109,6 +122,7 @@ class ThreatAssessmentEngine(
             .onEach { assessment ->
                 _lastAssessment.value = assessment
                 addToHistory(assessment)
+                trackSessionStats(assessment)
                 
                 Timber.i("✅ ThreatAssessmentEngine: STABLE assessment emitted - Score=${assessment.threatScore}, Level=${assessment.threatLevel}, Trigger=${assessment.shouldTriggerProtection}")
                 
@@ -246,7 +260,150 @@ class ThreatAssessmentEngine(
     }
     
     /**
-     * Retourne les statistiques récentes
+     * Démarre une nouvelle session et la sauvegarde en DB
+     */
+    fun startSession() {
+        sessionStartTime = System.currentTimeMillis()
+        totalThreatsDetected = 0
+        totalThreatScore = 0f
+        totalAssessments = 0
+        maxThreatScore = 0f
+        maxThreatLevel = ThreatLevel.NONE
+        threatEvents.clear()
+        
+        // Créer la session en DB si repository disponible
+        sessionRepository?.let { repo ->
+            scope.launch {
+                try {
+                    val protectionMode = _context.value.currentMode.name
+                    currentSessionId = repo.createSession(protectionMode)
+                    Timber.i("ThreatAssessmentEngine: Session started and saved to DB with ID: $currentSessionId")
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to create session in DB")
+                }
+            }
+        } ?: run {
+            Timber.i("ThreatAssessmentEngine: Session started (no DB persistence)")
+        }
+    }
+    
+    /**
+     * Termine la session en cours et met à jour les stats finales en DB
+     */
+    fun stopSession() {
+        val sessionId = currentSessionId
+        if (sessionId != null && sessionRepository != null) {
+            scope.launch {
+                try {
+                    val avgScore = if (totalAssessments > 0) {
+                        totalThreatScore / totalAssessments
+                    } else 0f
+                    
+                    sessionRepository.endSession(
+                        sessionId = sessionId,
+                        totalThreatsDetected = totalThreatsDetected,
+                        totalThreatScore = totalThreatScore,
+                        assessmentCount = totalAssessments,
+                        avgThreatScore = avgScore,
+                        maxThreatScore = maxThreatScore,
+                        maxThreatLevel = maxThreatLevel.name
+                    )
+                    
+                    Timber.i("ThreatAssessmentEngine: Session $sessionId ended. " +
+                            "Duration: ${System.currentTimeMillis() - sessionStartTime}ms, " +
+                            "Threats: $totalThreatsDetected, " +
+                            "Avg Score: $avgScore")
+                    
+                    currentSessionId = null
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to end session in DB")
+                }
+            }
+        } else {
+            Timber.i("ThreatAssessmentEngine: Session stopped (no DB persistence)")
+        }
+    }
+    
+    /**
+     * Track les stats de la session et sauvegarde les événements en DB
+     */
+    private fun trackSessionStats(assessment: ThreatAssessment) {
+        if (sessionStartTime == 0L) {
+            startSession()
+        }
+        
+        totalAssessments++
+        totalThreatScore += assessment.threatScore
+        
+        // Mettre à jour les max
+        if (assessment.threatScore.toFloat() > maxThreatScore) {
+            maxThreatScore = assessment.threatScore.toFloat()
+        }
+        if (assessment.threatLevel.ordinal > maxThreatLevel.ordinal) {
+            maxThreatLevel = assessment.threatLevel
+        }
+        
+        if (assessment.shouldTriggerProtection) {
+            totalThreatsDetected++
+            
+            val threatEvent = ThreatEvent(
+                timestamp = assessment.timestamp,
+                score = assessment.threatScore,
+                level = assessment.threatLevel,
+                reasons = assessment.triggerReasons
+            )
+            threatEvents.add(threatEvent)
+            
+            // Sauvegarder l'événement en DB
+            val sessionId = currentSessionId
+            if (sessionId != null && sessionRepository != null) {
+                scope.launch {
+                    try {
+                        sessionRepository.addThreatEvent(
+                            sessionId = sessionId,
+                            threatScore = assessment.threatScore.toFloat() / 100f, // Normaliser [0-100] -> [0-1]
+                            threatLevel = assessment.threatLevel.name,
+                            actionTriggered = assessment.recommendedAction?.name,
+                            cameraContribution = assessment.sensorContributions.cameraScore,
+                            audioContribution = assessment.sensorContributions.audioScore,
+                            motionContribution = assessment.sensorContributions.motionScore,
+                            proximityContribution = assessment.sensorContributions.proximityScore,
+                            reasons = assessment.triggerReasons.joinToString(" • ")
+                        )
+                        Timber.d("ThreatEvent saved to DB for session $sessionId")
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to save threat event to DB")
+                    }
+                }
+            }
+            
+            // Garder seulement les 50 dernières menaces en mémoire
+            if (threatEvents.size > 50) {
+                threatEvents.removeAt(0)
+            }
+        }
+    }
+    
+    /**
+     * Retourne les statistiques de la session complète
+     */
+    fun getSessionStats(): SessionStats {
+        val now = System.currentTimeMillis()
+        val durationMs = if (sessionStartTime > 0) now - sessionStartTime else 0
+        val avgScore = if (totalAssessments > 0) (totalThreatScore / totalAssessments).toInt() else 0
+        
+        return SessionStats(
+            sessionStartTime = sessionStartTime,
+            sessionDurationMs = durationMs,
+            totalThreatsDetected = totalThreatsDetected,
+            averageScore = avgScore,
+            currentMode = _context.value.currentMode,
+            recentThreats = threatEvents.takeLast(10)
+        )
+    }
+    
+    /**
+     * Retourne les statistiques récentes (pour compatibilité)
      */
     fun getRecentStats(): AssessmentStats {
         val recentAssessments = assessmentHistory.toList()
@@ -292,6 +449,28 @@ data class AssessmentStats(
     val threatsDetected: Int,
     val averageScore: Int,
     val lastThreatTime: Long?
+)
+
+/**
+ * Statistiques de la session complète
+ */
+data class SessionStats(
+    val sessionStartTime: Long,
+    val sessionDurationMs: Long,
+    val totalThreatsDetected: Int,
+    val averageScore: Int,
+    val currentMode: com.privacyguard.assessment.models.ProtectionMode,
+    val recentThreats: List<ThreatEvent>
+)
+
+/**
+ * Événement de menace détectée
+ */
+data class ThreatEvent(
+    val timestamp: Long,
+    val score: Int,
+    val level: com.privacyguard.sensors.ThreatLevel,
+    val reasons: List<String>
 )
 
 

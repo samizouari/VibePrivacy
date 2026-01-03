@@ -45,22 +45,54 @@ fun DashboardScreen(
         ProtectionMode.valueOf(savedMode ?: ProtectionMode.DISCRETE.name)
     }
     
-    // Statistiques simulées (en vrai, viendraient du service)
+    // Statistiques en temps réel depuis le service
     var stats by remember { mutableStateOf(DashboardStats()) }
     
-    // Simuler des mises à jour périodiques
-    LaunchedEffect(isProtectionActive) {
-        if (isProtectionActive) {
-            // En production, ces stats viendraient du ThreatAssessmentEngine
-            stats = DashboardStats(
-                sessionDuration = "5 min",
-                threatsDetected = 0,
-                avgThreatScore = 15,
-                cameraSensorActive = true,
-                audioSensorActive = true,
-                motionSensorActive = true,
-                proximitySensorActive = true
-            )
+    // Écouter les broadcasts du service pour les stats
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        val receiver = object : android.content.BroadcastReceiver() {
+            override fun onReceive(context: android.content.Context?, intent: android.content.Intent?) {
+                if (intent?.action == com.privacyguard.service.PrivacyGuardService.ACTION_SESSION_STATS_UPDATE) {
+                    val durationMs = intent.getLongExtra(
+                        com.privacyguard.service.PrivacyGuardService.EXTRA_SESSION_DURATION,
+                        0
+                    )
+                    val threatsDetected = intent.getIntExtra(
+                        com.privacyguard.service.PrivacyGuardService.EXTRA_THREATS_DETECTED,
+                        0
+                    )
+                    val avgScore = intent.getIntExtra(
+                        com.privacyguard.service.PrivacyGuardService.EXTRA_AVG_SCORE,
+                        0
+                    )
+                    val modeName = intent.getStringExtra(
+                        com.privacyguard.service.PrivacyGuardService.EXTRA_CURRENT_MODE
+                    ) ?: "DISCRETE"
+                    
+                    // Formater la durée
+                    val duration = formatDuration(durationMs)
+                    
+                    stats = DashboardStats(
+                        sessionDuration = duration,
+                        threatsDetected = threatsDetected,
+                        avgThreatScore = avgScore,
+                        currentMode = modeName,
+                        cameraSensorActive = isProtectionActive,
+                        audioSensorActive = isProtectionActive,
+                        motionSensorActive = isProtectionActive,
+                        proximitySensorActive = isProtectionActive
+                    )
+                }
+            }
+        }
+        
+        val filter = android.content.IntentFilter(
+            com.privacyguard.service.PrivacyGuardService.ACTION_SESSION_STATS_UPDATE
+        )
+        context.registerReceiver(receiver, filter, android.content.Context.RECEIVER_NOT_EXPORTED)
+        
+        onDispose {
+            context.unregisterReceiver(receiver)
         }
     }
     
@@ -315,9 +347,25 @@ data class DashboardStats(
     val sessionDuration: String = "0 min",
     val threatsDetected: Int = 0,
     val avgThreatScore: Int = 0,
+    val currentMode: String = "DISCRETE",
     val cameraSensorActive: Boolean = false,
     val audioSensorActive: Boolean = false,
     val motionSensorActive: Boolean = false,
     val proximitySensorActive: Boolean = false
 )
+
+/**
+ * Formate une durée en millisecondes en format lisible
+ */
+private fun formatDuration(durationMs: Long): String {
+    val seconds = (durationMs / 1000) % 60
+    val minutes = (durationMs / (1000 * 60)) % 60
+    val hours = (durationMs / (1000 * 60 * 60))
+    
+    return when {
+        hours > 0 -> "${hours}h ${minutes}min"
+        minutes > 0 -> "${minutes}min ${seconds}s"
+        else -> "${seconds}s"
+    }
+}
 

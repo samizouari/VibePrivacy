@@ -63,6 +63,10 @@ class SensorDataFusion(
         // 7. Recommander une action
         val recommendedAction = determineAction(threatScore, context)
         
+        // Extraire les infos caméra pour la logique de protection
+        val facesDetected = snapshot.cameraData?.facesDetected ?: 0
+        val unknownFaces = snapshot.cameraData?.unknownFacesCount ?: 0
+        
         val assessment = ThreatAssessment(
             timestamp = snapshot.timestamp,
             threatScore = threatScore,
@@ -71,7 +75,10 @@ class SensorDataFusion(
             shouldTriggerProtection = shouldTrigger,
             recommendedAction = recommendedAction,
             triggerReasons = triggerReasons,
-            sensorContributions = contributions
+            sensorContributions = contributions,
+            facesDetected = facesDetected,
+            unknownFacesCount = unknownFaces,
+            protectionMode = context.currentMode
         )
         
         Timber.i("SensorDataFusion: Assessment complete - " +

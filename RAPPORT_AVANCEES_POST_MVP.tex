@@ -495,7 +495,7 @@ Après la complétion du MVP (Jours 1-7), des fonctionnalités avancées ont ét
 
 \subsection{Jour 8 : Finalisation et Optimisation}
 
-\textbf{Durée :} 3 heures \\
+\textbf{Durée :} 4 heures \\
 \textbf{Statut :} \textcolor{green}{✓ Complet}
 
 \paragraph{Refonte de la logique de protection}
@@ -566,6 +566,41 @@ Suite aux tests utilisateur, la logique de protection a été complètement revu
     \item \textbf{Logs de détection} : Ajout de logs détaillés avec emojis pour debug
     \item \textbf{Compteur de frames} : Résolution du problème de portée de variable
     \item \textbf{Capture d'intrus} : Diagnostic complet avec logs à chaque étape
+\end{itemize}
+
+\paragraph{Verrouillage sécurisé par PIN}
+Suite aux tests utilisateur, le verrouillage complet a été amélioré pour empêcher la désactivation automatique.
+
+\begin{itemize}
+    \item \textbf{Clavier PIN intégré}
+    \begin{itemize}
+        \item Interface clavier numérique (0-9) dans l'overlay de verrouillage
+        \item Code PIN : 1234 (personnalisable)
+        \item Affichage masqué avec points (●●●●)
+        \item Boutons Clear (C) et Backspace (⌫)
+    \end{itemize}
+    
+    \item \textbf{Feedback visuel}
+    \begin{itemize}
+        \item Animation de réussite (flash vert) si code correct
+        \item Animation d'erreur (secousse + flash rouge) si code incorrect
+        \item Effets tactiles sur les boutons
+    \end{itemize}
+    
+    \item \textbf{Logique de verrouillage persistant}
+    \begin{itemize}
+        \item Flag \texttt{isLockActive} dans ProtectionExecutor
+        \item Empêche la désactivation automatique quand le score baisse
+        \item Seul le PIN correct déverrouille l'écran
+        \item Callback \texttt{onLockDismissed} pour réinitialiser l'état
+    \end{itemize}
+    
+    \item \textbf{Sécurité renforcée}
+    \begin{itemize}
+        \item L'utilisateur ne peut pas contourner le verrouillage
+        \item Protection active jusqu'à saisie du code
+        \item Utile en mode PARANOIA (score > 45) et BALANCED (score > 60)
+    \end{itemize}
 \end{itemize}
 
 \section{Métriques finales}

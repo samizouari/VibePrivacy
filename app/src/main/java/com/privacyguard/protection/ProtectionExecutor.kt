@@ -48,6 +48,9 @@ class ProtectionExecutor(
     // Délai minimum entre changements de protection (anti-oscillation)
     private val minActionInterval = 1000L // 1 seconde
     
+    // Flag pour tracker si le lock est actif (ne se désactive que par PIN)
+    private var isLockActive = false
+    
     // Job de restauration automatique
     private var autoRestoreJob: Job? = null
     
@@ -75,12 +78,19 @@ class ProtectionExecutor(
         val indicatorState = ProtectionStrategy.determineIndicatorState(assessment)
         overlayManager.updateIndicator(indicatorState)
         
+        // Si le lock est actif, ne rien faire (il ne se désactive que par PIN)
+        if (isLockActive) {
+            Timber.d("ProtectionExecutor: Lock is active, ignoring new assessment")
+            return
+        }
+        
         // Activer les overlays selon le plan
         when {
             plan.shouldLock -> {
                 // Verrouillage complet (priorité max)
                 activateInstantLock(assessment)
                 _currentProtection.value = ProtectionAction.INSTANT_LOCK
+                isLockActive = true
             }
             plan.shouldDecoy && plan.shouldBlur -> {
                 // Écran leurre + Flou
@@ -157,6 +167,12 @@ class ProtectionExecutor(
         
         withContext(Dispatchers.Main) {
             overlayManager.showLockScreen()
+        }
+        
+        // Configurer le callback pour désactiver le flag quand le PIN est entré
+        overlayManager.setOnLockDismissedListener {
+            isLockActive = false
+            Timber.i("ProtectionExecutor: Lock deactivated by PIN")
         }
         
         overlayManager.updateIndicator(IndicatorState.THREAT)
@@ -245,6 +261,7 @@ class ProtectionExecutor(
         scope.launch {
             deactivateProtection()
             _currentProtection.value = ProtectionAction.NONE
+            isLockActive = false
         }
     }
     

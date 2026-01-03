@@ -42,6 +42,7 @@ class OverlayManager(private val context: Context) {
     
     // Callback pour les événements d'overlay
     var onOverlayDismissed: (() -> Unit)? = null
+    var onLockDismissed: (() -> Unit)? = null
     
     /**
      * Vérifie si la permission d'overlay est accordée
@@ -194,6 +195,7 @@ class OverlayManager(private val context: Context) {
                     setOnDismissListener {
                         hideLockOverlay()
                         onOverlayDismissed?.invoke()
+                        onLockDismissed?.invoke()
                     }
                 }
                 
@@ -225,6 +227,13 @@ class OverlayManager(private val context: Context) {
         hideDecoyOverlay()
         hideLockOverlay()
         Timber.i("OverlayManager: All overlays hidden")
+    }
+    
+    /**
+     * Définit le callback pour le déverrouillage par PIN
+     */
+    fun setOnLockDismissedListener(listener: () -> Unit) {
+        onLockDismissed = listener
     }
     
     /**

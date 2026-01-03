@@ -127,6 +127,26 @@ Ce rapport présente l'intégralité du développement de Privacy Guard, de la c
     \end{itemize}
 \end{itemize}
 
+\subparagraph{Calcul du score de menace}
+Le score final (0-100\%) est calculé par une \textbf{somme pondérée} des contributions de chaque capteur :
+
+\begin{equation}
+\text{Score} = (\text{Caméra} \times 0.4) + (\text{Audio} \times 0.3) + (\text{Mouvement} \times 0.2) + (\text{Proximité} \times 0.1)
+\end{equation}
+
+\textbf{Exemple concret :}
+\begin{itemize}
+    \item 2 visages inconnus proches → Caméra = 80\%
+    \item Quelqu'un parle fort → Audio = 70\%
+    \item Téléphone bouge → Mouvement = 40\%
+    \item Main devant l'écran → Proximité = 90\%
+\end{itemize}
+
+\textbf{Score final} = $(80 \times 0.4) + (70 \times 0.3) + (40 \times 0.2) + (90 \times 0.1) = 32 + 21 + 8 + 9 = 70\%$
+
+\vspace{2mm}
+\noindent\textit{Plus il y a de capteurs qui détectent une anomalie simultanément, plus le score augmente rapidement.}
+
 \paragraph{Modes de protection}
 \begin{center}
 \begin{tabular}{lccl}

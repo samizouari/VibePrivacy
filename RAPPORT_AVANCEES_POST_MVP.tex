@@ -716,6 +716,155 @@ Capture photo & Non & 2+ inconnus & 2+ inconnus\\
 \end{tabular}
 \end{center}
 
+\subsection{Guide de test pour démonstration}
+
+Ce tableau fournit des instructions concrètes pour tester chaque fonctionnalité de l'application.
+
+\begin{center}
+\begin{tabular}{p{3.5cm}p{2cm}p{6cm}p{3cm}}
+\toprule
+\textbf{Fonctionnalité} & \textbf{Mode} & \textbf{Comment tester} & \textbf{Résultat attendu}\\
+\midrule
+
+\textbf{Flou progressif} & DISCRETE & 
+\begin{minipage}[t]{6cm}
+\vspace{-2mm}
+\begin{enumerate}[leftmargin=*,topsep=0pt]
+    \item Démarrer protection
+    \item Afficher 3 personnes devant caméra frontale
+    \item Attendre 2-3 secondes
+\end{enumerate}
+\vspace{-2mm}
+\end{minipage} & 
+Écran devient flou progressivement \\
+
+\midrule
+
+\textbf{Écran leurre + Flou} & BALANCED & 
+\begin{minipage}[t]{6cm}
+\vspace{-2mm}
+\begin{enumerate}[leftmargin=*,topsep=0pt]
+    \item Démarrer protection
+    \item Afficher 3 personnes
+    \item Observer l'écran
+\end{enumerate}
+\vspace{-2mm}
+\end{minipage} & 
+Écran leurre (fausse interface) + flou activés \\
+
+\midrule
+
+\textbf{Écran leurre + Flou (strict)} & PARANOIA & 
+\begin{minipage}[t]{6cm}
+\vspace{-2mm}
+\begin{enumerate}[leftmargin=*,topsep=0pt]
+    \item Démarrer protection
+    \item Afficher \textbf{2 personnes} (seuil bas)
+    \item Observer l'écran
+\end{enumerate}
+\vspace{-2mm}
+\end{minipage} & 
+Écran leurre + flou activés (plus sensible) \\
+
+\midrule
+
+\textbf{Verrouillage complet} & PARANOIA & 
+\begin{minipage}[t]{6cm}
+\vspace{-2mm}
+\begin{enumerate}[leftmargin=*,topsep=0pt]
+    \item Démarrer protection
+    \item Parler fort + bouger + 2 visages
+    \item Score dépasse 45\%
+\end{enumerate}
+\vspace{-2mm}
+\end{minipage} & 
+Écran verrouillé avec clavier PIN. Code : \textbf{1234} \\
+
+\midrule
+
+\textbf{Verrouillage complet} & BALANCED & 
+\begin{minipage}[t]{6cm}
+\vspace{-2mm}
+\begin{enumerate}[leftmargin=*,topsep=0pt]
+    \item Démarrer protection
+    \item Parler très fort + bouger beaucoup + 3+ visages
+    \item Score dépasse 60\%
+\end{enumerate}
+\vspace{-2mm}
+\end{minipage} & 
+Écran verrouillé avec clavier PIN. Code : \textbf{1234} \\
+
+\midrule
+
+\textbf{Capture d'intrus} & BALANCED & 
+\begin{minipage}[t]{6cm}
+\vspace{-2mm}
+\begin{enumerate}[leftmargin=*,topsep=0pt]
+    \item Démarrer protection
+    \item Afficher 2+ visages \textit{non enregistrés}
+    \item Vérifier galerie après
+\end{enumerate}
+\vspace{-2mm}
+\end{minipage} & 
+Photos des intrus sauvegardées dans \texttt{Pictures/IntruderCaptures/} \\
+
+\midrule
+
+\textbf{Capture d'intrus (strict)} & PARANOIA & 
+\begin{minipage}[t]{6cm}
+\vspace{-2mm}
+\begin{enumerate}[leftmargin=*,topsep=0pt]
+    \item Démarrer protection
+    \item Afficher 2+ visages inconnus
+    \item Photos capturées automatiquement
+\end{enumerate}
+\vspace{-2mm}
+\end{minipage} & 
+Photos sauvegardées avec timestamp \\
+
+\midrule
+
+\textbf{Dashboard dynamique} & Tous & 
+\begin{minipage}[t]{6cm}
+\vspace{-2mm}
+\begin{enumerate}[leftmargin=*,topsep=0pt]
+    \item Démarrer/arrêter protection
+    \item Aller dans Dashboard
+    \item Sélectionner un mode
+    \item Voir sessions + timeline
+\end{enumerate}
+\vspace{-2mm}
+\end{minipage} & 
+Statistiques temps réel + historique avec détails des menaces \\
+
+\midrule
+
+\textbf{Indicateur flottant} & Tous & 
+\begin{minipage}[t]{6cm}
+\vspace{-2mm}
+\begin{enumerate}[leftmargin=*,topsep=0pt]
+    \item Démarrer protection
+    \item Observer le petit cercle en haut
+    \item Vert = sûr, Orange = surveille, Rouge = menace
+\end{enumerate}
+\vspace{-2mm}
+\end{minipage} & 
+Indicateur change de couleur selon menace détectée \\
+
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Notes importantes pour la démonstration}
+\begin{itemize}
+    \item \textbf{Permissions} : Autoriser Caméra, Micro, Localisation et Overlay au premier lancement
+    \item \textbf{Caméra} : Utiliser la caméra \textit{frontale} (selfie) pour la détection de visages
+    \item \textbf{Visages inconnus} : Les visages détectés pour la première fois sont considérés comme inconnus
+    \item \textbf{Score cumulatif} : Le score augmente si plusieurs capteurs détectent une anomalie simultanément
+    \item \textbf{PIN Lock} : Le code \textbf{1234} déverrouille l'écran (saisir avec le clavier numérique)
+    \item \textbf{Logs} : Consulter les logs Android (Logcat) pour voir les détections en temps réel
+\end{itemize}
+
 \vspace{4mm}
 \noindent\textit{Développement réalisé du 30 novembre 2025 au 3 janvier 2026 en collaboration avec Claude Sonnet 4.5.}
 

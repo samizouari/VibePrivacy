@@ -202,8 +202,8 @@ class IntruderCapture(private val context: Context) {
             bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
             val imageBytes = outputStream.toByteArray()
             
-            // Chiffrer
-            val cipher = Cipher.getInstance(ENCRYPTION_ALGORITHM)
+            // Chiffrer avec AES/CBC/PKCS5Padding (même mode que le déchiffrement)
+            val cipher = Cipher.getInstance("$ENCRYPTION_ALGORITHM/CBC/PKCS5Padding")
             cipher.init(Cipher.ENCRYPT_MODE, secretKey)
             val encryptedBytes = cipher.doFinal(imageBytes)
             
@@ -211,11 +211,12 @@ class IntruderCapture(private val context: Context) {
             val file = File(intruderDir, fileName)
             FileOutputStream(file).use { fos ->
                 // Écrire l'IV (16 bytes pour AES)
-                fos.write(cipher.iv ?: ByteArray(16))
+                fos.write(cipher.iv)
                 // Écrire les données chiffrées
                 fos.write(encryptedBytes)
             }
             
+            Timber.d("$TAG: Photo encrypted and saved: ${file.name}, size: ${file.length()} bytes")
             file
             
         } catch (e: Exception) {

@@ -14,7 +14,9 @@ class FaceMatcher {
     
     companion object {
         // Seuil par défaut pour considérer une correspondance
-        const val DEFAULT_THRESHOLD = 0.75f
+        // Note: Seuil abaissé à 0.60 car l'embedding basé sur landmarks ML Kit
+        // est moins précis qu'un modèle FaceNet. Ajuster selon les tests.
+        const val DEFAULT_THRESHOLD = 0.60f
     }
     
     /**

@@ -188,9 +188,9 @@ class FaceEncoder(private val context: Context) {
             }
         }
         
-        // Remplir le reste avec du bruit aléatoire normalisé
+        // Remplir le reste avec des zéros (pas de bruit aléatoire)
         while (idx < EMBEDDING_SIZE) {
-            embedding[idx++] = (Math.random().toFloat() - 0.5f) * 0.1f
+            embedding[idx++] = 0f
         }
         
         return embedding

@@ -22,7 +22,8 @@ data class TrustedFace(
     val recognitionCount: Int = 0,
     
     // Seuil de confiance personnalisé (0.0-1.0)
-    val confidenceThreshold: Float = 0.75f
+    // Note: Seuil abaissé à 0.60 pour meilleure tolérance avec l'embedding ML Kit
+    val confidenceThreshold: Float = 0.60f
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

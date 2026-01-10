@@ -70,6 +70,10 @@ class CameraSensor(
     // Dernière image capturée pour la capture d'intrus
     private var lastCapturedBitmap: Bitmap? = null
     
+    // FaceEncoder réutilisable pour la reconnaissance
+    private val faceEncoder: com.privacyguard.trust.FaceEncoder? = 
+        if (trustFacesManager != null) com.privacyguard.trust.FaceEncoder(context) else null
+    
     override suspend fun onStart() {
         Timber.d("CameraSensor: Initializing camera...")
         
@@ -121,6 +125,9 @@ class CameraSensor(
         withContext(Dispatchers.Main) {
             cameraProvider?.unbindAll()
         }
+        
+        // Fermer le FaceEncoder
+        faceEncoder?.cleanup()
         
         camera = null
         imageAnalysis = null
@@ -340,7 +347,10 @@ class CameraSensor(
      * Compte le nombre de visages inconnus (non dans la liste de confiance)
      */
     private suspend fun countUnknownFaces(bitmap: Bitmap, faces: List<Face>): Int {
-        val faceEncoder = com.privacyguard.trust.FaceEncoder(context)
+        if (faceEncoder == null) {
+            Timber.w("CameraSensor: FaceEncoder not initialized")
+            return faces.size // Tous inconnus si pas d'encoder
+        }
         
         var unknownCount = 0
         
@@ -352,6 +362,7 @@ class CameraSensor(
                 // Si le crop a échoué (dimensions invalides), considérer comme inconnu
                 if (faceBitmap == null) {
                     unknownCount++
+                    Timber.d("CameraSensor: Failed to crop face, marking as unknown")
                     continue
                 }
                 
@@ -366,13 +377,14 @@ class CameraSensor(
                     
                     if (matchResult is com.privacyguard.trust.models.FaceMatchResult.Unknown) {
                         unknownCount++
-                        Timber.d("CameraSensor: Visage inconnu détecté")
+                        Timber.d("CameraSensor: ❌ Visage inconnu détecté")
                     } else if (matchResult is com.privacyguard.trust.models.FaceMatchResult.Trusted) {
-                        Timber.d("CameraSensor: ✓ Visage de confiance reconnu: ${matchResult.face.name}")
+                        Timber.i("CameraSensor: ✅ Visage de confiance reconnu: ${matchResult.face.name} (confidence=${(matchResult.confidence * 100).toInt()}%)")
                     }
                 } else {
                     // Impossible d'encoder → considérer comme inconnu
                     unknownCount++
+                    Timber.d("CameraSensor: Failed to encode face, marking as unknown")
                 }
             } catch (e: Exception) {
                 Timber.e(e, "CameraSensor: Error processing face for recognition")
@@ -380,7 +392,6 @@ class CameraSensor(
             }
         }
         
-        faceEncoder.cleanup()
         return unknownCount
     }
     

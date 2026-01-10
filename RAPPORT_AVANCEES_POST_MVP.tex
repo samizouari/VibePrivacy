@@ -721,21 +721,38 @@ L'approche Vibe Coding a permis de :
     \item Migration KAPT → KSP pour compatibilité Java 17
 \end{itemize}
 
-\subsection{Tableau récapitulatif des protections}
+\subsection{Tableau récapitulatif des protections (Optimisé)}
+
+\paragraph{Seuils de protection par mode}
 
 \begin{center}
 \begin{tabular}{lccc}
 \toprule
-\textbf{Condition} & \textbf{DISCRETE} & \textbf{BALANCED} & \textbf{PARANOIA}\\
+\textbf{Protection} & \textbf{DISCRETE} & \textbf{BALANCED} & \textbf{PARANOIA}\\
 \midrule
-2 visages & - & - & Flou + Leurre\\
-3+ visages & Flou & Flou + Leurre & Flou + Leurre\\
-Score > 45 & - & - & Lock\\
-Score > 60 & - & Lock & Lock\\
-Capture photo & Non & 2+ inconnus & 2+ inconnus\\
+\textbf{Flou} & 3+ visages & 2+ visages & 1+ visage\\
+ & OU score > 70 & OU score > 40 & OU score > 30\\
+\midrule
+\textbf{Écran leurre} & Non & 3+ visages & 2+ visages\\
+ &  & OU score > 50 & OU score > 35\\
+\midrule
+\textbf{Lock complet} & Non & Score > 55 & Score > 40\\
+ &  & OU (3 visages + score > 45) & OU (2 visages + score > 30)\\
+\midrule
+\textbf{Capture photo} & Non & 2+ inconnus & 1+ inconnu\\
 \bottomrule
 \end{tabular}
 \end{center}
+
+\paragraph{Logique OR (OU) pour réactivité maximale}
+
+La nouvelle stratégie utilise une logique \textbf{OR} au lieu de \textbf{AND} : les protections s'activent si \textit{soit} le nombre de visages \textit{soit} le score dépasse le seuil. Cela garantit que :
+\begin{itemize}
+    \item Un score élevé (bruit + mouvement) déclenche la protection même sans visages
+    \item Plusieurs visages déclenchent la protection même avec un score moyen
+    \item Le mode PARANOIA réagit dès 1 visage ou score > 30\% (très sensible)
+    \item Le mode BALANCED trouve un équilibre entre réactivité et faux positifs
+\end{itemize}
 
 \subsection{Guide de test pour démonstration}
 
@@ -795,7 +812,7 @@ Ce tableau fournit des instructions concrètes pour tester chaque fonctionnalit�
 \begin{enumerate}[leftmargin=*,topsep=0pt]
     \item Démarrer protection
     \item Parler fort + bouger + 2 visages
-    \item Score dépasse 45\%
+    \item Score dépasse 40\% (très sensible)
 \end{enumerate}
 \vspace{-2mm}
 \end{minipage} & 
@@ -808,8 +825,8 @@ Ce tableau fournit des instructions concrètes pour tester chaque fonctionnalit�
 \vspace{-2mm}
 \begin{enumerate}[leftmargin=*,topsep=0pt]
     \item Démarrer protection
-    \item Parler très fort + bouger beaucoup + 3+ visages
-    \item Score dépasse 60\%
+    \item Parler fort + bouger OU 3+ visages
+    \item Score dépasse 55\% (réactif)
 \end{enumerate}
 \vspace{-2mm}
 \end{minipage} & 
@@ -836,12 +853,12 @@ Photos des intrus sauvegardées dans \texttt{Pictures/IntruderCaptures/} \\
 \vspace{-2mm}
 \begin{enumerate}[leftmargin=*,topsep=0pt]
     \item Démarrer protection
-    \item Afficher 2+ visages inconnus
+    \item Afficher \textbf{1+ visage} inconnu
     \item Photos capturées automatiquement
 \end{enumerate}
 \vspace{-2mm}
 \end{minipage} & 
-Photos sauvegardées avec timestamp \\
+Photos sauvegardées avec timestamp (très sensible) \\
 
 \midrule
 

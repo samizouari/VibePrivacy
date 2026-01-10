@@ -14,7 +14,7 @@ import com.privacyguard.sensors.ThreatLevel
  * Chaque mode a un seuil de déclenchement différent
  */
 enum class ProtectionMode(val threshold: Int, val description: String) {
-    PARANOIA(25, "Très sensible - Moindre mouvement détecté"),
+    PARANOIA(20, "Très sensible - Réagit au moindre mouvement"),
     BALANCED(50, "Équilibré - Protection raisonnable"),
     DISCRETE(75, "Discret - Uniquement menaces directes"),
     TRUST_ZONE(95, "Zone de confiance - Presque désactivé")

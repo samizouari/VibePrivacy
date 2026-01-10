@@ -8,11 +8,11 @@ import timber.log.Timber
 /**
  * Stratégie de protection basée sur le nombre de visages et le mode
  * 
- * Logique Jour 8 :
- * - DISCRETE : Flou si 3+ visages
- * - BALANCED : Flou + Écran leurre si 3+ visages, Lock si score > 60
- * - PARANOIA : Flou + Écran leurre si 2+ visages, Lock si score > 45
- * - TRUST_ZONE : Basé sur score uniquement
+ * Logique Jour 8 (Optimisée) :
+ * - DISCRETE : Flou si 3+ visages OU score > 70
+ * - BALANCED : Flou si 2+ visages OU score > 40, Décoy si 3+ visages OU score > 50, Lock si score > 55
+ * - PARANOIA : Flou si 1+ visage OU score > 30, Décoy si 2+ visages OU score > 35, Lock si score > 40
+ * - TRUST_ZONE : Basé sur score uniquement (seuils élevés)
  */
 object ProtectionStrategy {
     
@@ -35,33 +35,33 @@ object ProtectionStrategy {
         
         when (mode) {
             ProtectionMode.DISCRETE -> {
-                // DISCRETE : Flou si 3+ visages
-                shouldBlur = faces >= 3
+                // DISCRETE : Flou si 3+ visages OU score élevé
+                shouldBlur = faces >= 3 || score > 70
                 shouldDecoy = false
                 shouldLock = false
                 shouldCapture = false
                 
-                Timber.d("ProtectionStrategy [DISCRETE]: blur=$shouldBlur (faces >= 3)")
+                Timber.d("ProtectionStrategy [DISCRETE]: blur=$shouldBlur (faces >= 3 OR score > 70)")
             }
             
             ProtectionMode.BALANCED -> {
-                // BALANCED : Flou + Écran leurre si 3+ visages
-                shouldBlur = faces >= 3
-                shouldDecoy = faces >= 3
-                shouldLock = score > 60
+                // BALANCED : Réactif au score ET aux visages
+                shouldBlur = faces >= 2 || score > 40
+                shouldDecoy = faces >= 3 || score > 50
+                shouldLock = score > 55 || (faces >= 3 && score > 45)
                 shouldCapture = unknownFaces >= 2
                 
-                Timber.d("ProtectionStrategy [BALANCED]: blur=$shouldBlur, decoy=$shouldDecoy (faces >= 3), lock=$shouldLock (score > 60), capture=$shouldCapture (unknown >= 2)")
+                Timber.d("ProtectionStrategy [BALANCED]: blur=$shouldBlur (faces >= 2 OR score > 40), decoy=$shouldDecoy (faces >= 3 OR score > 50), lock=$shouldLock (score > 55), capture=$shouldCapture (unknown >= 2)")
             }
             
             ProtectionMode.PARANOIA -> {
-                // PARANOIA : Flou + Écran leurre si 2+ visages
-                shouldBlur = faces >= 2
-                shouldDecoy = faces >= 2
-                shouldLock = score > 45
-                shouldCapture = unknownFaces >= 2
+                // PARANOIA : Très strict, réagit rapidement
+                shouldBlur = faces >= 1 || score > 30
+                shouldDecoy = faces >= 2 || score > 35
+                shouldLock = score > 40 || (faces >= 2 && score > 30)
+                shouldCapture = unknownFaces >= 1
                 
-                Timber.d("ProtectionStrategy [PARANOIA]: blur=$shouldBlur, decoy=$shouldDecoy (faces >= 2), lock=$shouldLock (score > 45), capture=$shouldCapture (unknown >= 2)")
+                Timber.d("ProtectionStrategy [PARANOIA]: blur=$shouldBlur (faces >= 1 OR score > 30), decoy=$shouldDecoy (faces >= 2 OR score > 35), lock=$shouldLock (score > 40), capture=$shouldCapture (unknown >= 1)")
             }
             
             ProtectionMode.TRUST_ZONE -> {
